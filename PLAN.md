@@ -21,18 +21,18 @@ searchable tables, a map, and a relationship graph.
 
 ## Tech stack
 
-| Layer          | Choice                                | Why                                                      |
-| -------------- | ------------------------------------- | -------------------------------------------------------- |
-| Framework      | Next.js 15 (App Router) + TypeScript  | Requested; server components keep DB queries server-side |
-| Styling        | Tailwind CSS + shadcn/ui              | Fast to build, accessible primitives                     |
-| DB / Auth      | Supabase (Postgres, Auth, Storage)    | Requested; RLS enforces access at the DB                 |
-| Forms          | react-hook-form + zod                 | Type-safe validation shared between client and server    |
-| Tables         | TanStack Table                        | Headless, URL-persisted filters/sort                     |
-| Map            | MapLibre GL via react-map-gl          | Free, no API token required to start                     |
-| Graph          | React Flow                            | Purpose-built for relationship graphs                    |
-| Deploy         | Vercel                                | First-class Next.js; branch previews out of the box      |
-| CI             | GitHub Actions                        | Requested                                                |
-| Package manager| pnpm                                  | Fast, disk-efficient, good monorepo story if we grow     |
+| Layer           | Choice                               | Why                                                      |
+| --------------- | ------------------------------------ | -------------------------------------------------------- |
+| Framework       | Next.js 16 (App Router) + TypeScript | Requested; server components keep DB queries server-side |
+| Styling         | Tailwind CSS + shadcn/ui             | Fast to build, accessible primitives                     |
+| DB / Auth       | Supabase (Postgres, Auth, Storage)   | Requested; RLS enforces access at the DB                 |
+| Forms           | react-hook-form + zod                | Type-safe validation shared between client and server    |
+| Tables          | TanStack Table                       | Headless, URL-persisted filters/sort                     |
+| Map             | MapLibre GL via react-map-gl         | Free, no API token required to start                     |
+| Graph           | React Flow                           | Purpose-built for relationship graphs                    |
+| Deploy          | Vercel                               | First-class Next.js; branch previews out of the box      |
+| CI              | GitHub Actions                       | Requested                                                |
+| Package manager | pnpm                                 | Fast, disk-efficient, good monorepo story if we grow     |
 
 ## Data model (first draft — will refine in Phase 2)
 
@@ -40,11 +40,11 @@ searchable tables, a map, and a relationship graph.
 - **profiles** — `id (= auth.users.id), display_name, role, chapter_id`
   - roles: `admin | auditor | chapter_exec | member`
 - **enterprises** — `id, chapter_id, name, description, category, stage,
-  lat, lng, founded_on, created_by, created_at`
+lat, lng, founded_on, created_by, created_at`
   - stages: `idea | validating | building | launched | scaling | paused`
 - **enterprise_members** — `enterprise_id, profile_id, role` (many-to-many)
 - **audits** — `id, enterprise_id, auditor_id, audited_on,
-  feasibility_score, progress_score, capability_score, summary`
+feasibility_score, progress_score, capability_score, summary`
   - scores: 1–5 integers, plus a free-text summary
 - **audit_criteria** — `id, audit_id, dimension, criterion, score, comment`
   - optional granular rubric underneath each top-level score
@@ -72,10 +72,11 @@ GitHub (you create the remote; I'll walk you through linking it).
 
 ### Phase 1 — Next.js scaffold
 
-- `pnpm create next-app` with App Router, TS, Tailwind, ESLint.
+- `pnpm create next-app` with App Router, TS, Tailwind, ESLint (no `src/`,
+  per current Next 16 recommended defaults — code lives at the root in `app/`).
 - Strict TypeScript (`strict: true`, `noUncheckedIndexedAccess: true`).
-- Prettier + ESLint config; lint-staged + husky pre-commit hook.
-- `pnpm dev` loads a placeholder home page.
+- Prettier + lint-staged + husky pre-commit hook.
+- `pnpm dev` loads the default home page.
 
 **Exit:** Local dev server runs; `pnpm lint && pnpm typecheck` both pass.
 
