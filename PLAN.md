@@ -91,32 +91,38 @@ GitHub (you create the remote; I'll walk you through linking it).
 
 **Exit:** `supabase db reset` applies cleanly locally; types regenerate.
 
-### Phase 3 — Auth
+> **Order note:** Phases 3, 4, 5 were reordered to CI → CD → Auth so that
+> auth code (multi-file, riskier) lands with CI already enforcing checks.
+
+### Phase 3 — CI pipeline (GitHub Actions)
+
+- `.github/workflows/ci.yml`: install, lint, format check, typecheck, build.
+- Required-status-check protection on `main` (configured in GitHub UI).
+- (Deferred: Supabase migration dry-run in CI — add when migrations get
+  complex enough to warrant it.)
+
+**Exit:** A PR runs CI; green required for merge.
+
+### Phase 4 — CD (Vercel)
+
+- Link the GitHub repo in Vercel; connect `main` → production.
+- Env vars in Vercel for Supabase URL + anon key + service role key (server only).
+- Push our schema to the cloud Supabase project (`supabase db push`).
+- Preview deployments for every PR automatically.
+- Add a tiny smoke test that hits the preview URL.
+
+**Exit:** PR merges → prod deploys automatically; preview URL on every PR;
+cloud DB matches local schema.
+
+### Phase 5 — Auth
 
 - Supabase Auth configured for magic links (email).
 - Server + browser Supabase clients (`@supabase/ssr`).
 - Login page, logout, protected routes via middleware.
-- On first sign-in, create a `profiles` row via DB trigger.
+- On first sign-in, the existing DB trigger creates the `profiles` row.
 
 **Exit:** You can log in on a deployed preview with a magic link and land on
 a page that greets you by name.
-
-### Phase 4 — CI pipeline (GitHub Actions)
-
-- `.github/workflows/ci.yml`: install, lint, typecheck, test, build.
-- Supabase migration dry-run against a throwaway Postgres service container.
-- Required-status-check protection on `main` (configured in GitHub UI).
-
-**Exit:** A PR runs CI; green required for merge.
-
-### Phase 5 — CD (Vercel)
-
-- Link the GitHub repo in Vercel; connect `main` → production.
-- Env vars in Vercel for Supabase URL + anon key + service role key (server only).
-- Preview deployments for every PR automatically.
-- Add a tiny smoke test (playwright or a curl in CI) that hits the preview URL.
-
-**Exit:** PR merges → prod deploys automatically; preview URL on every PR.
 
 ### Phase 6 — Data layer + forms
 
