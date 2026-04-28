@@ -158,7 +158,7 @@ export default async function EnterpriseDetailPage({
       <div className="grid gap-6 md:grid-cols-2">
         <section className="card-cut border border-white/10 bg-brand-surface p-5">
           <h2 className="mb-3 text-base">Details</h2>
-          <DetailRow label="Address" value={enterprise.location_name ?? "—"} />
+          <DetailRow label="Location" value={enterprise.location_name ?? "—"} />
           <DetailRow label="Founded" value={enterprise.founded_on ?? "—"} />
           <DetailRow
             label="Contact"
