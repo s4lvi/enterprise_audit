@@ -4,10 +4,16 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 
-import { updateEnterprise } from "../actions";
-import { DeleteEnterpriseButton } from "../delete-enterprise-button";
-import { EnterpriseForm } from "../enterprise-form";
 import { RelationshipsSection, type RelationshipRow } from "./relationships-section";
+
+const STAGE_COLORS: Record<string, string> = {
+  idea: "#666666",
+  validating: "#ffd600",
+  building: "#c11616",
+  launched: "#22c55e",
+  scaling: "#22c55e",
+  paused: "#444444",
+};
 
 export default async function EnterpriseDetailPage({
   params,
@@ -19,8 +25,6 @@ export default async function EnterpriseDetailPage({
 
   const [
     { data: enterprise, error },
-    { data: chapters },
-    { data: profiles },
     { data: audits },
     { data: enterpriseOptions },
     { data: outgoing },
@@ -30,16 +34,14 @@ export default async function EnterpriseDetailPage({
     supabase
       .from("enterprises")
       .select(
-        "id, chapter_id, name, outline, category, stage, location_name, lat, lng, contact_member_id, contact_external, business_plan_url, business_plan_notes, resources_needed, founded_on",
+        "id, chapter_id, name, outline, category, stage, location_name, lat, lng, contact_external, business_plan_url, business_plan_notes, resources_needed, founded_on, chapter:chapters(id, name), contact:profiles!contact_member_id(id, display_name)",
       )
       .eq("id", id)
       .maybeSingle(),
-    supabase.from("chapters").select("id, name").order("name"),
-    supabase.from("profiles").select("id, display_name, chapter_id").order("display_name"),
     supabase
       .from("audits")
       .select(
-        "id, audited_on, feasibility_score, progress_score, capability_score, auditor:profiles!auditor_id(display_name)",
+        "id, audited_on, feasibility_score, progress_score, capability_score, summary, auditor:profiles!auditor_id(display_name)",
       )
       .eq("enterprise_id", id)
       .order("audited_on", { ascending: false }),
@@ -56,7 +58,7 @@ export default async function EnterpriseDetailPage({
       if (!data.user) return null;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, chapter_id")
         .eq("id", data.user.id)
         .single();
       return profile;
@@ -73,7 +75,12 @@ export default async function EnterpriseDetailPage({
   if (!enterprise) notFound();
 
   const isAdmin = viewer?.role === "admin";
-  const canEditRelationships = viewer?.role === "admin" || viewer?.role === "auditor";
+  const isStaff = viewer?.role === "admin" || viewer?.role === "auditor";
+  // chapter_exec / member can edit if enterprise is in their chapter
+  const canEditEnterprise =
+    isStaff || (viewer?.chapter_id && viewer.chapter_id === enterprise.chapter_id);
+
+  const stageColor = STAGE_COLORS[enterprise.stage] ?? "#666";
 
   const relationshipRows: RelationshipRow[] = [
     ...(outgoing ?? [])
@@ -97,90 +104,157 @@ export default async function EnterpriseDetailPage({
   ];
 
   return (
-    <main className="mx-auto mt-8 max-w-2xl p-6">
-      <h1 className="mb-6 text-2xl font-semibold">{enterprise.name}</h1>
-
-      <EnterpriseForm
-        chapters={chapters ?? []}
-        profiles={profiles ?? []}
-        defaultValues={{
-          chapter_id: enterprise.chapter_id,
-          name: enterprise.name,
-          outline: enterprise.outline ?? "",
-          category: enterprise.category ?? "",
-          stage: enterprise.stage,
-          location_name: enterprise.location_name ?? "",
-          lat: enterprise.lat == null ? "" : String(enterprise.lat),
-          lng: enterprise.lng == null ? "" : String(enterprise.lng),
-          contact_member_id: enterprise.contact_member_id ?? "",
-          contact_external: enterprise.contact_external ?? "",
-          business_plan_url: enterprise.business_plan_url ?? "",
-          business_plan_notes: enterprise.business_plan_notes ?? "",
-          resources_needed: enterprise.resources_needed ?? "",
-          founded_on: enterprise.founded_on ?? "",
-        }}
-        action={updateEnterprise.bind(null, id)}
-        submitLabel="Save changes"
-      />
-
-      <hr className="my-8" />
-
-      <section className="mb-8">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Audits</h2>
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/audits/new?enterprise_id=${id}`}>Add audit</Link>
-          </Button>
-        </div>
-        {audits && audits.length > 0 ? (
-          <div className="overflow-hidden rounded border border-white/10">
-            <table className="w-full text-sm">
-              <thead className="bg-white/5 text-left text-xs uppercase tracking-wide text-white/50">
-                <tr>
-                  <th className="p-2">Date</th>
-                  <th className="p-2">Auditor</th>
-                  <th className="p-2 text-center">Feas</th>
-                  <th className="p-2 text-center">Prog</th>
-                  <th className="p-2 text-center">Cap</th>
-                </tr>
-              </thead>
-              <tbody>
-                {audits.map((a) => (
-                  <tr key={a.id} className="border-t hover:bg-white/5">
-                    <td className="p-2">
-                      <Link href={`/audits/${a.id}`} className="hover:underline">
-                        {a.audited_on}
-                      </Link>
-                    </td>
-                    <td className="p-2 text-white/60">{a.auditor?.display_name ?? "—"}</td>
-                    <td className="p-2 text-center">{a.feasibility_score}</td>
-                    <td className="p-2 text-center">{a.progress_score}</td>
-                    <td className="p-2 text-center">{a.capability_score}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+    <main className="mx-auto mt-8 w-full max-w-5xl px-4 pb-12 sm:px-6 lg:px-8">
+      <header className="mb-8 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-bold tracking-widest text-brand-primary uppercase">
+            {enterprise.chapter ? (
+              <Link href={`/chapters/${enterprise.chapter.id}`} className="hover:underline">
+                {enterprise.chapter.name}
+              </Link>
+            ) : (
+              "Enterprise"
+            )}
+          </p>
+          <h1 className="text-4xl">{enterprise.name}</h1>
+          <div className="mt-2 flex items-center gap-3">
+            <span
+              className="inline-block px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase"
+              style={{
+                background: stageColor,
+                color: enterprise.stage === "validating" ? "#000" : "#fff",
+              }}
+            >
+              {enterprise.stage}
+            </span>
+            {enterprise.category ? (
+              <span className="text-[10px] font-bold tracking-widest text-white/40 uppercase">
+                · {enterprise.category}
+              </span>
+            ) : null}
           </div>
-        ) : (
-          <p className="text-sm text-white/60">No audits yet for this enterprise.</p>
-        )}
-      </section>
+        </div>
+        <div className="flex items-center gap-2">
+          {canEditEnterprise ? (
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/enterprises/${id}/edit`}>Edit</Link>
+            </Button>
+          ) : null}
+          {isStaff ? (
+            <Button asChild size="sm">
+              <Link href={`/audits/new?enterprise_id=${id}`}>Add audit</Link>
+            </Button>
+          ) : null}
+        </div>
+      </header>
 
-      <hr className="my-8" />
+      {enterprise.outline ? (
+        <section className="mb-8 max-w-3xl">
+          <p className="text-[10px] font-bold tracking-widest text-white/40 uppercase">Outline</p>
+          <p className="mt-1 text-sm leading-relaxed text-white/80">{enterprise.outline}</p>
+        </section>
+      ) : null}
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <section className="card-cut border border-white/10 bg-brand-surface p-5">
+          <h2 className="mb-3 text-base">Details</h2>
+          <DetailRow label="Address" value={enterprise.location_name ?? "—"} />
+          <DetailRow label="Founded" value={enterprise.founded_on ?? "—"} />
+          <DetailRow
+            label="Contact"
+            value={enterprise.contact?.display_name ?? enterprise.contact_external ?? "—"}
+          />
+          <DetailRow
+            label="Business plan"
+            value={
+              enterprise.business_plan_url ? (
+                <a
+                  href={enterprise.business_plan_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-primary hover:underline"
+                >
+                  {enterprise.business_plan_url}
+                </a>
+              ) : (
+                "—"
+              )
+            }
+          />
+          {enterprise.business_plan_notes ? (
+            <DetailRow label="Plan notes" value={enterprise.business_plan_notes} multiline />
+          ) : null}
+          {enterprise.resources_needed ? (
+            <DetailRow label="Resources needed" value={enterprise.resources_needed} multiline />
+          ) : null}
+        </section>
+
+        <section className="card-cut border border-white/10 bg-brand-surface p-5">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="text-base">Audits</h2>
+            <span className="text-[10px] font-bold tracking-widest text-white/40 uppercase">
+              {(audits ?? []).length}
+            </span>
+          </div>
+          {audits && audits.length > 0 ? (
+            <ul className="space-y-2 text-sm">
+              {audits.map((a) => (
+                <li
+                  key={a.id}
+                  className="flex items-baseline justify-between gap-3 border-b border-white/5 pb-2 last:border-b-0"
+                >
+                  <Link
+                    href={`/audits/${a.id}`}
+                    className="font-mono text-xs text-white/60 hover:text-brand-primary"
+                  >
+                    {a.audited_on}
+                  </Link>
+                  <span className="grow text-xs text-white/50">
+                    {a.auditor?.display_name ?? "—"}
+                  </span>
+                  <span className="font-mono text-xs">
+                    F{a.feasibility_score} · P{a.progress_score} · C{a.capability_score}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-white/50">No audits yet.</p>
+          )}
+        </section>
+      </div>
+
+      <hr className="my-8 border-white/10" />
 
       <RelationshipsSection
         enterpriseId={id}
         enterpriseOptions={enterpriseOptions ?? []}
         relationships={relationshipRows}
-        canEdit={canEditRelationships}
+        canEdit={isStaff}
       />
 
-      {isAdmin ? (
-        <>
-          <hr className="my-8" />
-          <DeleteEnterpriseButton id={id} name={enterprise.name} />
-        </>
-      ) : null}
+      {isAdmin ? null : null}
     </main>
+  );
+}
+
+function DetailRow({
+  label,
+  value,
+  multiline,
+}: {
+  label: string;
+  value: React.ReactNode;
+  multiline?: boolean;
+}) {
+  return (
+    <div className="border-b border-white/5 py-2 last:border-b-0">
+      <p className="text-[10px] font-bold tracking-widest text-white/40 uppercase">{label}</p>
+      <p
+        className={`mt-1 text-sm text-white/80 ${multiline ? "whitespace-pre-line leading-relaxed" : ""}`}
+      >
+        {value}
+      </p>
+    </div>
   );
 }
