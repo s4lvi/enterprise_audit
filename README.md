@@ -1,32 +1,157 @@
 # Enterprise Audit
 
-A web app for auditing chapter enterprises across our business-development organization.
-Tracks feasibility, progress, and chapter capability; provides table, map, and
-relationship-graph views.
+Web app for auditing chapter enterprises across our business-development
+organization. Tracks chapters (states), enterprises within them, and
+point-in-time audits scoring feasibility, progress, and capability —
+viewable as searchable tables, a map of enterprise locations, and a
+relationship graph.
 
-See [PLAN.md](./PLAN.md) for the phased build plan and architecture.
-
-## Status
-
-Pre-alpha — under active initial setup.
+See [PLAN.md](./PLAN.md) for the build plan and [docs/rls-matrix.md](./docs/rls-matrix.md)
+for the role/permission grid.
 
 ## Stack
 
-Next.js 15 (App Router) · TypeScript · Tailwind · Supabase (Postgres/Auth) ·
-Vercel · GitHub Actions · pnpm.
+Next.js 16 (App Router) · TypeScript · Tailwind v4 · shadcn/ui · Supabase
+(Postgres / Auth / RLS) · Vercel · GitHub Actions · pnpm.
 
-## Getting started
+## Local development
 
-> Setup instructions will fill in as phases land. For now: read `PLAN.md`.
+### Prerequisites
+
+- Node 22 LTS (use [`nvm`](https://github.com/nvm-sh/nvm))
+- [`pnpm`](https://pnpm.io/) (Corepack-managed via the `packageManager` field)
+- Docker Desktop (running) — required for the local Supabase stack
+- [`supabase` CLI](https://supabase.com/docs/guides/cli) (`brew install supabase/tap/supabase`)
+
+### First-time setup
 
 ```bash
-nvm use            # Node 22 LTS (see .nvmrc)
-pnpm install       # once package.json exists (Phase 1)
-pnpm dev           # local dev server
+nvm use                 # picks up Node from .nvmrc
+pnpm install
+supabase start          # boots Postgres, Auth, Storage, Studio in Docker
+pnpm db:reset           # applies migrations + seed data
+cp .env.local.example .env.local
+# fill .env.local from `supabase status` (API_URL -> NEXT_PUBLIC_SUPABASE_URL,
+# ANON_KEY -> NEXT_PUBLIC_SUPABASE_ANON_KEY, SERVICE_ROLE_KEY -> SUPABASE_SERVICE_ROLE_KEY)
+pnpm dev
+```
+
+Visit `http://localhost:3000`. The middleware bounces unauthenticated
+visitors to `/login`. Submit any email; the magic-link email is captured
+by **Mailpit** (local fake SMTP, URL in `supabase status` output).
+
+### Bootstrapping an admin
+
+After your first sign-in (creates a `member` profile via DB trigger),
+promote yourself locally:
+
+```bash
+PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres \
+  -c "update public.profiles set role='admin' where display_name='<your-email-prefix>';"
+```
+
+For the cloud database, run the same `update` in the Supabase dashboard SQL editor.
+
+### Common scripts
+
+```bash
+pnpm dev            # Next dev server
+pnpm build          # production build
+pnpm typecheck      # tsc --noEmit
+pnpm lint           # eslint
+pnpm format         # prettier --write .
+pnpm format:check   # prettier --check . (used by CI)
+
+pnpm db:start       # supabase start (idempotent)
+pnpm db:stop        # supabase stop
+pnpm db:reset       # drop + reapply migrations + seed (LOCAL ONLY)
+pnpm db:diff        # show schema drift between local and the linked project
+pnpm db:types       # regenerate lib/db/database.types.ts from the local schema
+pnpm db:push        # apply pending migrations to the linked cloud project (CAREFUL)
+```
+
+## Deploy
+
+CD is automatic via Vercel:
+
+- merging to `main` deploys to production
+- every PR gets a unique preview URL
+
+Schema changes are NOT applied to the cloud DB by Vercel — you must run
+`pnpm db:push` yourself after merging a migration.
+
+### Required env vars (in Vercel)
+
+| Name                            | Where it comes from                                         |
+| ------------------------------- | ----------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase Project Settings → API → **Project URL** (no path) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Project Settings → API → anon (publishable) key    |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Same page → service_role (secret) key                       |
+
+### Required Supabase Auth config
+
+In your cloud project's Authentication → URL Configuration:
+
+- **Site URL:** your Vercel production URL (e.g. `https://enterprise-audit.vercel.app`)
+- **Redirect URLs (one per line):**
+  - `https://<your-prod-domain>/**`
+  - `https://*.vercel.app/**` (or tighter: `https://*-<team-slug>.vercel.app/**`)
+
+If a magic-link email lands on the home page with `?code=...` instead of
+`/auth/callback?code=...`, the destination URL didn't match the
+allowlist and Supabase silently used Site URL — fix the redirect rule.
+
+## Project layout
+
+```
+app/                  # Next App Router routes
+  <entity>/           # /chapters, /enterprises, /audits, etc.
+    actions.ts        # server actions (create/update/delete)
+    page.tsx          # list view (TanStack Table)
+    new/page.tsx      # create form
+    [id]/page.tsx     # detail/edit + delete
+    *-form.tsx        # client form (react-hook-form + zod)
+  admin/              # admin-gated pages (audit log)
+  auth/callback/      # supabase magic-link callback
+  login/              # /login
+  map/                # /map (MapLibre)
+  graph/              # /graph (React Flow)
+  layout.tsx          # root layout with SiteHeader
+components/
+  ui/                 # shadcn primitives
+  data-table.tsx      # generic TanStack Table wrapper
+  site-header.tsx     # role-aware top nav (server component)
+lib/
+  schemas/            # zod schemas per entity (form input + output)
+  supabase/           # server, browser, middleware clients + error helper
+  db/database.types.ts  # generated by `pnpm db:types`
+middleware.ts         # session-refresh + route protection (edge)
+supabase/
+  config.toml         # local stack config
+  migrations/         # SQL migrations (timestamped)
+  seed.sql            # local-only dev data
+docs/
+  rls-matrix.md       # role × table × action policy grid
 ```
 
 ## Conventions
 
-- Conventional commits (e.g. `feat:`, `fix:`, `chore:`, `docs:`) — keeps history scannable.
-- One concern per PR; CI must be green to merge.
-- Secrets live in `.env.local` (never committed) and Vercel env vars.
+- Conventional commits (`feat:`, `fix:`, `chore:`, `docs:`).
+- One concern per PR; CI must be green to merge (branch protection).
+- Secrets in `.env.local` (gitignored) and Vercel env vars; never committed.
+- Schema source of truth = SQL migrations. Edit a schema → new migration
+  → `pnpm db:reset` locally → `pnpm db:types` → `pnpm db:push` after merge.
+
+## Troubleshooting
+
+- **"Invalid path specified in request URL" when signing in**:
+  `NEXT_PUBLIC_SUPABASE_URL` in Vercel has a path baked in (e.g. trailing
+  `/rest/v1/`). Use only the bare project URL.
+- **Magic link redirects to home page with `?code=...`**: the
+  `emailRedirectTo` URL didn't match the redirect-URL allowlist in
+  Supabase Auth — Supabase silently fell back to Site URL.
+- **`@hookform/resolvers/zod` typecheck error mentioning `_zod.version.minor`**:
+  use `standardSchemaResolver` from `@hookform/resolvers/standard-schema`
+  instead; zod 4 implements Standard Schema.
+- **`db reset` wipes my local user**: yes, it nukes `auth.users` too.
+  Sign back in, then re-promote with the SQL above.
