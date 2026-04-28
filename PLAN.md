@@ -1,5 +1,8 @@
 # Enterprise Audit — Project Plan
 
+> **Status:** v1 phases complete (0–11). The work below is preserved as
+> the build record; ongoing changes go in PRs against `main`.
+
 A web app to audit business-development chapters' enterprises/ventures: track
 feasibility, progress, and chapter capability; enter data via forms; explore via
 searchable tables, a map, and a relationship graph.
