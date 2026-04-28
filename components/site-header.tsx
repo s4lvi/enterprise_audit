@@ -80,11 +80,14 @@ export async function SiteHeader() {
         </div>
 
         <div className="flex items-center gap-4">
-          <span className="hidden text-xs uppercase tracking-widest text-white/40 sm:inline">
+          <Link
+            href="/profile"
+            className="hidden text-xs uppercase tracking-widest text-white/40 transition-colors hover:text-white sm:inline"
+          >
             {profile?.display_name ?? user.email}
             <span className="mx-2 text-white/20">·</span>
             <span className="text-white/60">{profile?.role ?? "—"}</span>
-          </span>
+          </Link>
           <form action="/logout" method="post">
             <button
               type="submit"
