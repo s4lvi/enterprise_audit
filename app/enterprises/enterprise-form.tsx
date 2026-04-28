@@ -1,7 +1,8 @@
 "use client";
 
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
-import { useMemo, useTransition } from "react";
+import { CheckCircle2, Loader2, MapPinOff } from "lucide-react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
@@ -67,11 +68,55 @@ export function EnterpriseForm({
   });
 
   const selectedChapter = useWatch({ control: form.control, name: "chapter_id" });
+  const location = useWatch({ control: form.control, name: "location_name" });
 
   const contactOptions = useMemo(
     () => profiles.filter((p) => selectedChapter && p.chapter_id === selectedChapter),
     [profiles, selectedChapter],
   );
+
+  // Live geocode preview: ping /api/geocode 500ms after the user stops
+  // typing. Status indicator is informational only — the save action
+  // does its own geocoding.
+  const [geocode, setGeocode] = useState<
+    | { kind: "idle" }
+    | { kind: "loading" }
+    | { kind: "found"; displayName: string }
+    | { kind: "miss" }
+  >({ kind: "idle" });
+
+  useEffect(() => {
+    const trimmed = (location ?? "").trim();
+    const ctrl = new AbortController();
+    const timer = setTimeout(async () => {
+      if (trimmed.length < 3) {
+        setGeocode({ kind: "idle" });
+        return;
+      }
+      setGeocode({ kind: "loading" });
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(trimmed)}`, {
+          signal: ctrl.signal,
+        });
+        if (ctrl.signal.aborted) return;
+        if (!res.ok) {
+          setGeocode({ kind: "miss" });
+          return;
+        }
+        const data = (await res.json()) as { result: { displayName: string } | null };
+        if (ctrl.signal.aborted) return;
+        setGeocode(
+          data.result ? { kind: "found", displayName: data.result.displayName } : { kind: "miss" },
+        );
+      } catch {
+        if (!ctrl.signal.aborted) setGeocode({ kind: "miss" });
+      }
+    }, 500);
+    return () => {
+      ctrl.abort();
+      clearTimeout(timer);
+    };
+  }, [location]);
 
   const handleSubmit = form.handleSubmit(() => {
     const values = form.getValues();
@@ -150,6 +195,7 @@ export function EnterpriseForm({
             placeholder="Street address, city, or ZIP code"
             {...form.register("location_name")}
           />
+          <GeocodeStatus status={geocode} />
         </Field>
       </Section>
 
@@ -250,5 +296,39 @@ function Field({
       {children}
       {error ? <p className="text-sm text-brand-danger">{error}</p> : null}
     </div>
+  );
+}
+
+function GeocodeStatus({
+  status,
+}: {
+  status:
+    | { kind: "idle" }
+    | { kind: "loading" }
+    | { kind: "found"; displayName: string }
+    | { kind: "miss" };
+}) {
+  if (status.kind === "idle") return null;
+  if (status.kind === "loading") {
+    return (
+      <p className="flex items-center gap-1.5 text-xs text-white/50">
+        <Loader2 className="size-3 animate-spin" />
+        Looking up location…
+      </p>
+    );
+  }
+  if (status.kind === "found") {
+    return (
+      <p className="flex items-start gap-1.5 text-xs text-brand-success">
+        <CheckCircle2 className="mt-px size-3 shrink-0" />
+        <span className="break-words">Found: {status.displayName}</span>
+      </p>
+    );
+  }
+  return (
+    <p className="flex items-center gap-1.5 text-xs text-white/50">
+      <MapPinOff className="size-3 shrink-0" />
+      Couldn&apos;t find this — won&apos;t appear on the map
+    </p>
   );
 }
