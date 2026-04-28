@@ -1,13 +1,16 @@
 import Link from "next/link";
 
+import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+
+import { enterpriseColumns, type EnterpriseRow } from "./columns";
 
 export default async function EnterprisesPage() {
   const supabase = await createClient();
   const { data: enterprises, error } = await supabase
     .from("enterprises")
-    .select("id, name, stage, location_name, chapter:chapters(id, name)")
+    .select("id, name, stage, location_name, chapter:chapters(name)")
     .order("name");
 
   if (error) {
@@ -18,6 +21,14 @@ export default async function EnterprisesPage() {
     );
   }
 
+  const rows: EnterpriseRow[] = (enterprises ?? []).map((e) => ({
+    id: e.id,
+    name: e.name,
+    stage: e.stage,
+    location_name: e.location_name,
+    chapter_name: e.chapter?.name ?? null,
+  }));
+
   return (
     <main className="mx-auto mt-8 max-w-5xl p-6">
       <header className="mb-6 flex items-center justify-between">
@@ -27,41 +38,12 @@ export default async function EnterprisesPage() {
         </Button>
       </header>
 
-      {enterprises.length === 0 ? (
-        <p className="text-gray-600">
-          No enterprises yet.{" "}
-          <Link href="/enterprises/new" className="underline">
-            Add one.
-          </Link>
-        </p>
-      ) : (
-        <div className="overflow-hidden rounded border border-gray-200">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-              <tr>
-                <th className="p-3">Name</th>
-                <th className="p-3">Chapter</th>
-                <th className="p-3">Stage</th>
-                <th className="p-3">Location</th>
-              </tr>
-            </thead>
-            <tbody>
-              {enterprises.map((e) => (
-                <tr key={e.id} className="border-t hover:bg-gray-50">
-                  <td className="p-3">
-                    <Link href={`/enterprises/${e.id}`} className="font-medium hover:underline">
-                      {e.name}
-                    </Link>
-                  </td>
-                  <td className="p-3 text-gray-600">{e.chapter?.name ?? "—"}</td>
-                  <td className="p-3 text-gray-600">{e.stage}</td>
-                  <td className="p-3 text-gray-600">{e.location_name ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable<EnterpriseRow, unknown>
+        columns={enterpriseColumns}
+        data={rows}
+        searchPlaceholder="Search by name, chapter, stage, location…"
+        emptyMessage="No enterprises yet."
+      />
     </main>
   );
 }

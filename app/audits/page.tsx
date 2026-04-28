@@ -1,14 +1,17 @@
 import Link from "next/link";
 
+import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+
+import { auditColumns, type AuditRow } from "./columns";
 
 export default async function AuditsPage() {
   const supabase = await createClient();
   const { data: audits, error } = await supabase
     .from("audits")
     .select(
-      "id, audited_on, feasibility_score, progress_score, capability_score, enterprise:enterprises(id, name), auditor:profiles!auditor_id(id, display_name)",
+      "id, audited_on, feasibility_score, progress_score, capability_score, enterprise:enterprises(id, name), auditor:profiles!auditor_id(display_name)",
     )
     .order("audited_on", { ascending: false });
 
@@ -20,6 +23,17 @@ export default async function AuditsPage() {
     );
   }
 
+  const rows: AuditRow[] = (audits ?? []).map((a) => ({
+    id: a.id,
+    audited_on: a.audited_on,
+    feasibility_score: a.feasibility_score,
+    progress_score: a.progress_score,
+    capability_score: a.capability_score,
+    enterprise_id: a.enterprise?.id ?? null,
+    enterprise_name: a.enterprise?.name ?? null,
+    auditor_name: a.auditor?.display_name ?? null,
+  }));
+
   return (
     <main className="mx-auto mt-8 max-w-5xl p-6">
       <header className="mb-6 flex items-center justify-between">
@@ -29,40 +43,12 @@ export default async function AuditsPage() {
         </Button>
       </header>
 
-      {audits.length === 0 ? (
-        <p className="text-gray-600">No audits yet.</p>
-      ) : (
-        <div className="overflow-hidden rounded border border-gray-200">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-              <tr>
-                <th className="p-3">Date</th>
-                <th className="p-3">Enterprise</th>
-                <th className="p-3">Auditor</th>
-                <th className="p-3 text-center">Feas</th>
-                <th className="p-3 text-center">Prog</th>
-                <th className="p-3 text-center">Cap</th>
-              </tr>
-            </thead>
-            <tbody>
-              {audits.map((a) => (
-                <tr key={a.id} className="border-t hover:bg-gray-50">
-                  <td className="p-3">
-                    <Link href={`/audits/${a.id}`} className="font-medium hover:underline">
-                      {a.audited_on}
-                    </Link>
-                  </td>
-                  <td className="p-3 text-gray-600">{a.enterprise?.name ?? "—"}</td>
-                  <td className="p-3 text-gray-600">{a.auditor?.display_name ?? "—"}</td>
-                  <td className="p-3 text-center">{a.feasibility_score}</td>
-                  <td className="p-3 text-center">{a.progress_score}</td>
-                  <td className="p-3 text-center">{a.capability_score}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable<AuditRow, unknown>
+        columns={auditColumns}
+        data={rows}
+        searchPlaceholder="Search by enterprise, auditor, date…"
+        emptyMessage="No audits yet."
+      />
     </main>
   );
 }
