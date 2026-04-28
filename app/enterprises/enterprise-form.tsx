@@ -145,17 +145,26 @@ export function EnterpriseForm({
       </Section>
 
       <Section title="Location">
-        <Field label="Location name" error={errors.location_name?.message}>
-          <Input placeholder="e.g. East 6th St, Austin" {...form.register("location_name")} />
+        <Field label="Address" error={errors.location_name?.message}>
+          <Input placeholder="123 Main St, City, State" {...form.register("location_name")} />
         </Field>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Latitude" error={errors.lat?.message}>
-            <Input type="number" step="any" {...form.register("lat")} />
-          </Field>
-          <Field label="Longitude" error={errors.lng?.message}>
-            <Input type="number" step="any" {...form.register("lng")} />
-          </Field>
-        </div>
+        <details className="space-y-3">
+          <summary className="cursor-pointer text-[10px] font-bold tracking-widest text-white/40 uppercase hover:text-white/60">
+            Map coordinates (optional)
+          </summary>
+          <p className="text-xs text-white/40">
+            Lat/lng pin this enterprise on the Map view. Leave blank if you don&apos;t have them —
+            the enterprise will still appear in tables and the graph.
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Latitude" error={errors.lat?.message}>
+              <Input type="number" step="any" {...form.register("lat")} />
+            </Field>
+            <Field label="Longitude" error={errors.lng?.message}>
+              <Input type="number" step="any" {...form.register("lng")} />
+            </Field>
+          </div>
+        </details>
       </Section>
 
       <Section title="Contact">

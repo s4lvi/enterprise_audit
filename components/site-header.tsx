@@ -61,12 +61,20 @@ export async function SiteHeader() {
               </Link>
             ))}
             {isAdmin ? (
-              <Link
-                href="/admin/audit-log"
-                className="text-xs font-bold uppercase tracking-[0.2em] text-white/60 transition-colors hover:text-white"
-              >
-                Audit log
-              </Link>
+              <>
+                <Link
+                  href="/admin/members"
+                  className="text-xs font-bold uppercase tracking-[0.2em] text-white/60 transition-colors hover:text-white"
+                >
+                  Members
+                </Link>
+                <Link
+                  href="/admin/audit-log"
+                  className="text-xs font-bold uppercase tracking-[0.2em] text-white/60 transition-colors hover:text-white"
+                >
+                  Audit log
+                </Link>
+              </>
             ) : null}
           </nav>
         </div>

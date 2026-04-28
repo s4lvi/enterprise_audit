@@ -140,15 +140,21 @@ const nodeTypes = { enterprise: EnterpriseNode };
 export function RelationshipGraph({
   nodes: nodeData,
   edges: edgeData,
+  className = "h-[calc(100vh-14rem)]",
+  interactive = true,
 }: {
   nodes: GraphNode[];
   edges: GraphEdge[];
+  className?: string;
+  interactive?: boolean;
 }) {
   const router = useRouter();
   const { nodes, edges } = useMemo(() => layout(nodeData, edgeData), [nodeData, edgeData]);
 
   return (
-    <div className="relative h-[calc(100vh-14rem)] w-full overflow-hidden border border-white/10 bg-[#050505]">
+    <div
+      className={`relative w-full overflow-hidden border border-white/10 bg-[#050505] ${className}`}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -157,10 +163,15 @@ export function RelationshipGraph({
         fitView
         fitViewOptions={{ padding: 0.15 }}
         proOptions={{ hideAttribution: true }}
+        nodesDraggable={interactive}
+        nodesConnectable={false}
+        elementsSelectable={interactive}
+        zoomOnScroll={interactive}
+        panOnDrag={interactive}
         onNodeClick={(_, node) => router.push(`/enterprises/${node.id}`)}
       >
         <Background color="#1a1a1a" gap={24} />
-        <Controls showInteractive={false} />
+        {interactive ? <Controls showInteractive={false} /> : null}
       </ReactFlow>
     </div>
   );
