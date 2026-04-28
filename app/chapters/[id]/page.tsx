@@ -11,7 +11,7 @@ export default async function ChapterDetailPage({ params }: { params: Promise<{ 
   const supabase = await createClient();
   const { data: chapter, error } = await supabase
     .from("chapters")
-    .select("id, name, city, region, lat, lng, notes")
+    .select("id, name, notes")
     .eq("id", id)
     .maybeSingle();
 
@@ -31,10 +31,6 @@ export default async function ChapterDetailPage({ params }: { params: Promise<{ 
       <ChapterForm
         defaultValues={{
           name: chapter.name,
-          city: chapter.city ?? "",
-          region: chapter.region ?? "",
-          lat: chapter.lat == null ? "" : String(chapter.lat),
-          lng: chapter.lng == null ? "" : String(chapter.lng),
           notes: chapter.notes ?? "",
         }}
         action={updateChapter.bind(null, id)}

@@ -8,6 +8,7 @@ import {
   type ChapterFormInput,
   type ChapterFormValues,
 } from "@/lib/schemas/chapter";
+import { friendlyError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 
 export type ActionResult = { error: string | null };
@@ -39,7 +40,7 @@ export async function createChapter(values: ChapterFormInput): Promise<ActionRes
   const supabase = await createClient();
   const { error } = await supabase.from("chapters").insert(parsed.data);
 
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyError(error) };
 
   revalidatePath("/chapters");
   redirect("/chapters");
@@ -52,7 +53,7 @@ export async function updateChapter(id: string, values: ChapterFormInput): Promi
   const supabase = await createClient();
   const { error } = await supabase.from("chapters").update(parsed.data).eq("id", id);
 
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyError(error) };
 
   revalidatePath("/chapters");
   revalidatePath(`/chapters/${id}`);
@@ -63,7 +64,7 @@ export async function deleteChapter(id: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase.from("chapters").delete().eq("id", id);
 
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyError(error) };
 
   revalidatePath("/chapters");
   redirect("/chapters");
