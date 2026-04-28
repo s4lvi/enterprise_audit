@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 
-import { EnterpriseMap, type EnterprisePoint } from "./map/enterprise-map";
+import { EnterpriseMap, type ChapterPin, type EnterprisePoint } from "./map/enterprise-map";
 import { RelationshipGraph, type GraphEdge, type GraphNode } from "./graph/relationship-graph";
 
 export default async function HomePage() {
@@ -20,6 +20,8 @@ export default async function HomePage() {
     { count: enterprisesCount },
     { count: auditsCount },
     { data: mapEnterprises },
+    { data: chapters },
+    { data: chapterEnterpriseCounts },
     { data: graphEnterprises },
     { data: relationships },
   ] = await Promise.all([
@@ -32,6 +34,8 @@ export default async function HomePage() {
       .select("id, name, stage, lat, lng, location_name, chapter:chapters(name)")
       .not("lat", "is", null)
       .not("lng", "is", null),
+    supabase.from("chapters").select("id, name").order("name"),
+    supabase.from("enterprises").select("chapter_id"),
     supabase.from("enterprises").select("id, name, stage, chapter:chapters(name)").order("name"),
     supabase.from("enterprise_relationships").select("id, from_id, to_id, type"),
   ]);
@@ -47,6 +51,16 @@ export default async function HomePage() {
       location_name: e.location_name,
       chapter_name: e.chapter?.name ?? null,
     }));
+
+  const counts = new Map<string, number>();
+  for (const row of chapterEnterpriseCounts ?? []) {
+    counts.set(row.chapter_id, (counts.get(row.chapter_id) ?? 0) + 1);
+  }
+  const chapterPins: ChapterPin[] = (chapters ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    enterpriseCount: counts.get(c.id) ?? 0,
+  }));
 
   const graphNodes: GraphNode[] = (graphEnterprises ?? []).map((e) => ({
     id: e.id,
@@ -88,12 +102,17 @@ export default async function HomePage() {
           label="Map"
           subtitle={`${points.length} enterprise${points.length === 1 ? "" : "s"} pinned`}
         >
-          {points.length > 0 ? (
-            <EnterpriseMap points={points} className="h-72" interactive={false} />
+          {points.length > 0 || chapterPins.length > 0 ? (
+            <EnterpriseMap
+              points={points}
+              chapters={chapterPins}
+              className="h-72"
+              interactive={false}
+            />
           ) : (
             <EmptyPanel
-              text="No enterprises with coordinates yet."
-              cta="Add lat/lng on an enterprise's edit page"
+              text="No chapters or enterprises with coordinates yet."
+              cta="Add a chapter or enterprise lat/lng to populate the map"
             />
           )}
         </PreviewCard>
