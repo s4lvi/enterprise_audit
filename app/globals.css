@@ -216,3 +216,56 @@ textarea:-webkit-autofill {
     @apply border-border outline-ring/50;
   }
 }
+
+/* ============================================================================
+   Library overrides — pull third-party widgets into the dark theme
+   ============================================================================ */
+
+/* React Flow controls — dark variant via colorMode="dark" prop. We just
+   override the hover to brand red. */
+.react-flow.dark .react-flow__controls-button:hover {
+  background: var(--brand-primary) !important;
+}
+
+/* MapLibre popup — match dark theme */
+.maplibregl-popup-content {
+  background: rgba(17, 17, 17, 0.95) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  padding: 10px 12px !important;
+}
+.maplibregl-popup-tip {
+  border-bottom-color: rgba(17, 17, 17, 0.95) !important;
+  border-top-color: rgba(17, 17, 17, 0.95) !important;
+}
+.maplibregl-popup-close-button {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 16px;
+  padding: 2px 6px;
+}
+.maplibregl-popup-close-button:hover {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+/* MapLibre nav controls (zoom in/out, compass) */
+.maplibregl-ctrl-group {
+  background: rgba(17, 17, 17, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+}
+.maplibregl-ctrl-group button {
+  background-color: transparent !important;
+  filter: invert(1) brightness(2);
+}
+.maplibregl-ctrl-group button:hover {
+  background: rgba(193, 22, 22, 0.6) !important;
+}
+.maplibregl-ctrl-attrib {
+  background: rgba(0, 0, 0, 0.6) !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+.maplibregl-ctrl-attrib a {
+  color: rgba(255, 255, 255, 0.7) !important;
+}

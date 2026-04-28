@@ -153,6 +153,7 @@ export function RelationshipGraph({
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        colorMode="dark"
         fitView
         fitViewOptions={{ padding: 0.15 }}
         proOptions={{ hideAttribution: true }}
