@@ -56,6 +56,11 @@ export default async function HomePage() {
         <Link href="/graph" className="block text-blue-600 hover:underline">
           → Graph
         </Link>
+        {profile?.role === "admin" ? (
+          <Link href="/admin/audit-log" className="block text-blue-600 hover:underline">
+            → Admin · audit log
+          </Link>
+        ) : null}
       </nav>
     </main>
   );
