@@ -44,6 +44,9 @@ export default async function HomePage() {
         <Link href="/chapters" className="block text-blue-600 hover:underline">
           → Chapters
         </Link>
+        <Link href="/enterprises" className="block text-blue-600 hover:underline">
+          → Enterprises
+        </Link>
       </nav>
     </main>
   );

@@ -21,10 +21,6 @@ type Props = {
 
 const empty: ChapterFormInput = {
   name: "",
-  city: "",
-  region: "",
-  lat: "",
-  lng: "",
   notes: "",
 };
 
@@ -53,27 +49,9 @@ export function ChapterForm({ defaultValues, action, submitLabel = "Save" }: Pro
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Field label="Name" required error={errors.name?.message}>
-        <Input {...form.register("name")} />
+      <Field label="State" required error={errors.name?.message}>
+        <Input placeholder="e.g. Illinois" {...form.register("name")} />
       </Field>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="City" error={errors.city?.message}>
-          <Input {...form.register("city")} />
-        </Field>
-        <Field label="Region" error={errors.region?.message}>
-          <Input {...form.register("region")} />
-        </Field>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Latitude" error={errors.lat?.message}>
-          <Input type="number" step="any" {...form.register("lat")} />
-        </Field>
-        <Field label="Longitude" error={errors.lng?.message}>
-          <Input type="number" step="any" {...form.register("lng")} />
-        </Field>
-      </div>
 
       <Field label="Notes" error={errors.notes?.message}>
         <Textarea rows={4} {...form.register("notes")} />

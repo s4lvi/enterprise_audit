@@ -84,36 +84,24 @@ export type Database = {
       };
       chapters: {
         Row: {
-          city: string | null;
           created_at: string;
           id: string;
-          lat: number | null;
-          lng: number | null;
           name: string;
           notes: string | null;
-          region: string | null;
           updated_at: string;
         };
         Insert: {
-          city?: string | null;
           created_at?: string;
           id?: string;
-          lat?: number | null;
-          lng?: number | null;
           name: string;
           notes?: string | null;
-          region?: string | null;
           updated_at?: string;
         };
         Update: {
-          city?: string | null;
           created_at?: string;
           id?: string;
-          lat?: number | null;
-          lng?: number | null;
           name?: string;
           notes?: string | null;
-          region?: string | null;
           updated_at?: string;
         };
         Relationships: [];

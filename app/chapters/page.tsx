@@ -7,7 +7,7 @@ export default async function ChaptersPage() {
   const supabase = await createClient();
   const { data: chapters, error } = await supabase
     .from("chapters")
-    .select("id, name, city, region")
+    .select("id, name, notes")
     .order("name");
 
   if (error) {
@@ -34,9 +34,8 @@ export default async function ChaptersPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="p-3">Name</th>
-                <th className="p-3">City</th>
-                <th className="p-3">Region</th>
+                <th className="p-3">State</th>
+                <th className="p-3">Notes</th>
               </tr>
             </thead>
             <tbody>
@@ -47,8 +46,7 @@ export default async function ChaptersPage() {
                       {c.name}
                     </Link>
                   </td>
-                  <td className="p-3 text-gray-600">{c.city ?? "—"}</td>
-                  <td className="p-3 text-gray-600">{c.region ?? "—"}</td>
+                  <td className="p-3 text-gray-600">{c.notes ?? "—"}</td>
                 </tr>
               ))}
             </tbody>
