@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
@@ -39,9 +40,11 @@ export default async function HomePage() {
           </button>
         </form>
       </header>
-      <p className="text-gray-700">
-        Enterprise Audit is set up. Forms, tables, map, and graph views are next.
-      </p>
+      <nav className="space-y-2">
+        <Link href="/chapters" className="block text-blue-600 hover:underline">
+          → Chapters
+        </Link>
+      </nav>
     </main>
   );
 }
