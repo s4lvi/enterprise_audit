@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { updateEnterprise } from "../actions";
 import { DeleteEnterpriseButton } from "../delete-enterprise-button";
 import { EnterpriseForm } from "../enterprise-form";
+import { RelationshipsSection, type RelationshipRow } from "./relationships-section";
 
 export default async function EnterpriseDetailPage({
   params,
@@ -16,25 +17,51 @@ export default async function EnterpriseDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: enterprise, error }, { data: chapters }, { data: profiles }, { data: audits }] =
-    await Promise.all([
-      supabase
-        .from("enterprises")
-        .select(
-          "id, chapter_id, name, outline, category, stage, location_name, lat, lng, contact_member_id, contact_external, business_plan_url, business_plan_notes, resources_needed, founded_on",
-        )
-        .eq("id", id)
-        .maybeSingle(),
-      supabase.from("chapters").select("id, name").order("name"),
-      supabase.from("profiles").select("id, display_name, chapter_id").order("display_name"),
-      supabase
-        .from("audits")
-        .select(
-          "id, audited_on, feasibility_score, progress_score, capability_score, auditor:profiles!auditor_id(display_name)",
-        )
-        .eq("enterprise_id", id)
-        .order("audited_on", { ascending: false }),
-    ]);
+  const [
+    { data: enterprise, error },
+    { data: chapters },
+    { data: profiles },
+    { data: audits },
+    { data: enterpriseOptions },
+    { data: outgoing },
+    { data: incoming },
+    viewer,
+  ] = await Promise.all([
+    supabase
+      .from("enterprises")
+      .select(
+        "id, chapter_id, name, outline, category, stage, location_name, lat, lng, contact_member_id, contact_external, business_plan_url, business_plan_notes, resources_needed, founded_on",
+      )
+      .eq("id", id)
+      .maybeSingle(),
+    supabase.from("chapters").select("id, name").order("name"),
+    supabase.from("profiles").select("id, display_name, chapter_id").order("display_name"),
+    supabase
+      .from("audits")
+      .select(
+        "id, audited_on, feasibility_score, progress_score, capability_score, auditor:profiles!auditor_id(display_name)",
+      )
+      .eq("enterprise_id", id)
+      .order("audited_on", { ascending: false }),
+    supabase.from("enterprises").select("id, name").order("name"),
+    supabase
+      .from("enterprise_relationships")
+      .select("id, type, notes, to:enterprises!to_id(id, name)")
+      .eq("from_id", id),
+    supabase
+      .from("enterprise_relationships")
+      .select("id, type, notes, from:enterprises!from_id(id, name)")
+      .eq("to_id", id),
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return null;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .single();
+      return profile;
+    }),
+  ]);
 
   if (error) {
     return (
@@ -44,6 +71,30 @@ export default async function EnterpriseDetailPage({
     );
   }
   if (!enterprise) notFound();
+
+  const isAdmin = viewer?.role === "admin";
+  const canEditRelationships = viewer?.role === "admin" || viewer?.role === "auditor";
+
+  const relationshipRows: RelationshipRow[] = [
+    ...(outgoing ?? [])
+      .filter((r) => r.to)
+      .map((r) => ({
+        id: r.id,
+        type: r.type,
+        notes: r.notes,
+        outgoing: true as const,
+        other: { id: r.to!.id, name: r.to!.name },
+      })),
+    ...(incoming ?? [])
+      .filter((r) => r.from)
+      .map((r) => ({
+        id: r.id,
+        type: r.type,
+        notes: r.notes,
+        outgoing: false as const,
+        other: { id: r.from!.id, name: r.from!.name },
+      })),
+  ];
 
   return (
     <main className="mx-auto mt-8 max-w-2xl p-6">
@@ -116,7 +167,20 @@ export default async function EnterpriseDetailPage({
       </section>
 
       <hr className="my-8" />
-      <DeleteEnterpriseButton id={id} name={enterprise.name} />
+
+      <RelationshipsSection
+        enterpriseId={id}
+        enterpriseOptions={enterpriseOptions ?? []}
+        relationships={relationshipRows}
+        canEdit={canEditRelationships}
+      />
+
+      {isAdmin ? (
+        <>
+          <hr className="my-8" />
+          <DeleteEnterpriseButton id={id} name={enterprise.name} />
+        </>
+      ) : null}
     </main>
   );
 }

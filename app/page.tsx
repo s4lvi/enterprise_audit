@@ -53,6 +53,9 @@ export default async function HomePage() {
         <Link href="/map" className="block text-blue-600 hover:underline">
           → Map
         </Link>
+        <Link href="/graph" className="block text-blue-600 hover:underline">
+          → Graph
+        </Link>
       </nav>
     </main>
   );
