@@ -33,7 +33,7 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
   if (error) {
     return (
       <main className="mx-auto mt-8 max-w-2xl p-6">
-        <p className="text-red-600">{error.message}</p>
+        <p className="text-brand-danger">{error.message}</p>
       </main>
     );
   }
@@ -46,7 +46,7 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
       <h1 className="mb-1 text-2xl font-semibold">
         Audit · {audit.enterprise?.name ?? "(unknown)"}
       </h1>
-      <p className="mb-6 text-sm text-gray-600">{audit.audited_on}</p>
+      <p className="mb-6 text-sm text-white/60">{audit.audited_on}</p>
 
       <AuditForm
         enterprises={enterprises ?? []}

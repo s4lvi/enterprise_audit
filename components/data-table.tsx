@@ -95,13 +95,13 @@ export function DataTable<TData, TValue>({
           onChange={(e) => setGlobalFilter(e.target.value)}
           className="max-w-sm"
         />
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-white/50">
           {table.getFilteredRowModel().rows.length} result
           {table.getFilteredRowModel().rows.length === 1 ? "" : "s"}
         </p>
       </div>
 
-      <div className="overflow-hidden rounded border border-gray-200">
+      <div className="overflow-hidden rounded border border-white/10">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -119,7 +119,7 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {table.getRowModel().rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center text-gray-500">
+                <TableCell colSpan={columns.length} className="text-center text-white/50">
                   {emptyMessage}
                 </TableCell>
               </TableRow>
@@ -139,7 +139,7 @@ export function DataTable<TData, TValue>({
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-white/50">
           Page {pageInfo.idx} of {pageInfo.pageCount}
         </p>
         <div className="flex gap-2">

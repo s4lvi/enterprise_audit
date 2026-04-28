@@ -26,17 +26,17 @@ export const enterpriseColumns: ColumnDef<EnterpriseRow>[] = [
   {
     accessorKey: "chapter_name",
     header: ({ column }) => <SortableHeader column={column}>Chapter</SortableHeader>,
-    cell: ({ row }) => <span className="text-gray-600">{row.original.chapter_name ?? "—"}</span>,
+    cell: ({ row }) => <span className="text-white/60">{row.original.chapter_name ?? "—"}</span>,
   },
   {
     accessorKey: "stage",
     header: ({ column }) => <SortableHeader column={column}>Stage</SortableHeader>,
-    cell: ({ row }) => <span className="text-gray-600">{row.original.stage}</span>,
+    cell: ({ row }) => <span className="text-white/60">{row.original.stage}</span>,
   },
   {
     accessorKey: "location_name",
     header: "Location",
-    cell: ({ row }) => <span className="text-gray-600">{row.original.location_name ?? "—"}</span>,
+    cell: ({ row }) => <span className="text-white/60">{row.original.location_name ?? "—"}</span>,
     enableSorting: false,
   },
 ];

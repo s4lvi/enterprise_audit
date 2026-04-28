@@ -71,25 +71,25 @@ export function RelationshipsSection({
       <h2 className="mb-3 text-lg font-semibold">Relationships</h2>
 
       {relationships.length === 0 ? (
-        <p className="mb-4 text-sm text-gray-600">No relationships yet.</p>
+        <p className="mb-4 text-sm text-white/60">No relationships yet.</p>
       ) : (
         <ul className="mb-4 space-y-2 text-sm">
           {relationships.map((r) => (
             <li
               key={r.id}
-              className="flex items-center justify-between rounded border border-gray-200 p-2"
+              className="flex items-center justify-between rounded border border-white/10 p-2"
             >
               <div className="space-y-0.5">
                 <div>
-                  <span className="text-gray-500">{r.outgoing ? "→ " : "← "}</span>
+                  <span className="text-white/50">{r.outgoing ? "→ " : "← "}</span>
                   <Link href={`/enterprises/${r.other.id}`} className="font-medium hover:underline">
                     {r.other.name}
                   </Link>
-                  <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-700">
+                  <span className="ml-2 rounded bg-white/10 px-1.5 py-0.5 text-xs text-white/80">
                     {r.type}
                   </span>
                 </div>
-                {r.notes ? <div className="text-xs text-gray-500">{r.notes}</div> : null}
+                {r.notes ? <div className="text-xs text-white/50">{r.notes}</div> : null}
               </div>
               {canEdit ? <DeleteRelationshipButton id={r.id} /> : null}
             </li>
@@ -98,8 +98,8 @@ export function RelationshipsSection({
       )}
 
       {canEdit ? (
-        <div className="rounded border border-gray-200 p-3">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <div className="rounded border border-white/10 p-3">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/50">
             Add relationship
           </p>
           <div className="space-y-3">
@@ -143,7 +143,7 @@ export function RelationshipsSection({
                 placeholder="Context, terms, etc."
               />
             </div>
-            {error ? <p className="text-sm text-red-600">{error}</p> : null}
+            {error ? <p className="text-sm text-brand-danger">{error}</p> : null}
             <Button type="button" disabled={isPending || !toId} onClick={onAdd} size="sm">
               {isPending ? "Adding…" : "Add relationship"}
             </Button>

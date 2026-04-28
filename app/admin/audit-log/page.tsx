@@ -27,7 +27,7 @@ export default async function AuditLogPage() {
   if (error) {
     return (
       <main className="mx-auto mt-8 max-w-5xl p-6">
-        <p className="text-red-600">{error.message}</p>
+        <p className="text-brand-danger">{error.message}</p>
       </main>
     );
   }
@@ -45,16 +45,16 @@ export default async function AuditLogPage() {
     <main className="mx-auto mt-8 max-w-5xl p-6">
       <header className="mb-4">
         <h1 className="text-2xl font-semibold">Audit log</h1>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-white/50">
           Sensitive writes only — deletes on content tables and role/chapter changes on profiles.
           Most recent 200 entries.
         </p>
       </header>
 
       {entries && entries.length > 0 ? (
-        <div className="overflow-hidden rounded border border-gray-200">
+        <div className="overflow-hidden rounded border border-white/10">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+            <thead className="bg-white/5 text-left text-xs uppercase tracking-wide text-white/50">
               <tr>
                 <th className="p-3">When</th>
                 <th className="p-3">Actor</th>
@@ -69,19 +69,19 @@ export default async function AuditLogPage() {
                   <td className="p-3 font-mono text-xs">
                     {new Date(e.occurred_at).toISOString().replace("T", " ").slice(0, 19)}
                   </td>
-                  <td className="p-3 text-gray-600">
+                  <td className="p-3 text-white/60">
                     {(e.actor_id && actorMap.get(e.actor_id)) ?? "—"}
                   </td>
-                  <td className="p-3 text-gray-600">{e.table_name}</td>
-                  <td className="p-3 text-gray-600">{e.operation}</td>
-                  <td className="p-3 font-mono text-xs text-gray-500">{e.row_id ?? "—"}</td>
+                  <td className="p-3 text-white/60">{e.table_name}</td>
+                  <td className="p-3 text-white/60">{e.operation}</td>
+                  <td className="p-3 font-mono text-xs text-white/50">{e.row_id ?? "—"}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       ) : (
-        <p className="text-gray-600">No entries yet.</p>
+        <p className="text-white/60">No entries yet.</p>
       )}
     </main>
   );

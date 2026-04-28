@@ -213,7 +213,9 @@ export function EnterpriseForm({
         </Field>
       </Section>
 
-      {errors.root?.message ? <p className="text-sm text-red-600">{errors.root.message}</p> : null}
+      {errors.root?.message ? (
+        <p className="text-sm text-brand-danger">{errors.root.message}</p>
+      ) : null}
 
       <Button type="submit" disabled={isPending}>
         {isPending ? "Saving..." : submitLabel}
@@ -225,7 +227,7 @@ export function EnterpriseForm({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-4">
-      <h2 className="border-b pb-1 text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <h2 className="border-b pb-1 text-sm font-semibold uppercase tracking-wide text-white/50">
         {title}
       </h2>
       {children}
@@ -248,10 +250,10 @@ function Field({
     <div className="space-y-1.5">
       <Label>
         {label}
-        {required ? <span className="text-red-600"> *</span> : null}
+        {required ? <span className="text-brand-danger"> *</span> : null}
       </Label>
       {children}
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm text-brand-danger">{error}</p> : null}
     </div>
   );
 }

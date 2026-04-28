@@ -38,10 +38,10 @@ export function EnterpriseMap({ points }: Props) {
   );
 
   return (
-    <div className="h-[calc(100vh-12rem)] w-full overflow-hidden rounded border border-gray-200">
+    <div className="relative h-[calc(100vh-10rem)] w-full overflow-hidden border border-white/10">
       <Map
         initialViewState={initialView}
-        style={{ width: "100%", height: "100%" }}
+        style={{ position: "absolute", inset: 0 }}
         mapStyle="https://tiles.openfreemap.org/styles/liberty"
       >
         <NavigationControl position="top-right" />
@@ -59,7 +59,7 @@ export function EnterpriseMap({ points }: Props) {
             }}
           >
             <div
-              className="size-3 cursor-pointer rounded-full border-2 border-white bg-blue-600 shadow"
+              className="size-3 cursor-pointer rounded-full border-2 border-white bg-brand-primary shadow"
               title={p.name}
             />
           </Marker>
@@ -78,15 +78,15 @@ export function EnterpriseMap({ points }: Props) {
           >
             <div className="space-y-1.5 p-1">
               <div className="font-semibold">{selected.name}</div>
-              <div className="text-xs text-gray-600">
+              <div className="text-xs text-white/60">
                 {selected.chapter_name ?? "—"} · {selected.stage}
               </div>
               {selected.location_name ? (
-                <div className="text-xs text-gray-500">{selected.location_name}</div>
+                <div className="text-xs text-white/50">{selected.location_name}</div>
               ) : null}
               <Link
                 href={`/enterprises/${selected.id}`}
-                className="inline-block text-xs text-blue-600 hover:underline"
+                className="inline-block text-xs text-brand-primary hover:underline"
               >
                 View details →
               </Link>

@@ -7,6 +7,7 @@ import {
   Background,
   Controls,
   Handle,
+  MarkerType,
   Position,
   ReactFlow,
   type Edge,
@@ -30,13 +31,33 @@ export type GraphEdge = {
   type: string;
 };
 
-const NODE_WIDTH = 200;
-const NODE_HEIGHT = 64;
+const NODE_WIDTH = 220;
+const NODE_HEIGHT = 84;
+
+// Stage color hints — visualize maturity at a glance.
+const STAGE_COLORS: Record<string, string> = {
+  idea: "#666666",
+  validating: "#ffd600",
+  building: "#c11616",
+  launched: "#22c55e",
+  scaling: "#22c55e",
+  paused: "#444444",
+};
+
+// Edge type → color, for a quick visual read of relationship variety.
+const TYPE_COLORS: Record<string, string> = {
+  partner: "#ffd600",
+  supplier: "#22c55e",
+  customer: "#22c55e",
+  competitor: "#c11616",
+  parent: "#ffffff",
+  spinoff: "#888888",
+};
 
 function layout(nodes: GraphNode[], edges: GraphEdge[]) {
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: "LR", nodesep: 30, ranksep: 80 });
+  g.setGraph({ rankdir: "LR", nodesep: 40, ranksep: 100 });
 
   for (const n of nodes) {
     g.setNode(n.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
@@ -57,29 +78,59 @@ function layout(nodes: GraphNode[], edges: GraphEdge[]) {
     };
   });
 
-  const edgeList: Edge[] = edges.map((e) => ({
-    id: e.id,
-    source: e.from_id,
-    target: e.to_id,
-    label: e.type,
-    labelBgPadding: [4, 2],
-    labelBgStyle: { fill: "#f3f4f6" },
-    labelBgBorderRadius: 4,
-  }));
+  const edgeList: Edge[] = edges.map((e) => {
+    const color = TYPE_COLORS[e.type] ?? "#ffffff";
+    return {
+      id: e.id,
+      source: e.from_id,
+      target: e.to_id,
+      label: e.type,
+      animated: false,
+      style: { stroke: color, strokeWidth: 2 },
+      labelStyle: {
+        fill: color,
+        fontSize: 10,
+        fontWeight: 700,
+        textTransform: "uppercase",
+        letterSpacing: "0.1em",
+      },
+      labelBgPadding: [6, 3],
+      labelBgStyle: { fill: "rgba(0,0,0,0.85)" },
+      labelBgBorderRadius: 0,
+      markerEnd: { type: MarkerType.ArrowClosed, color, width: 16, height: 16 },
+    };
+  });
 
   return { nodes: positioned, edges: edgeList };
 }
 
 function EnterpriseNode({ data }: NodeProps) {
-  const { name, chapter, stage } = data as { name: string; chapter: string | null; stage: string };
+  const { name, chapter, stage } = data as {
+    name: string;
+    chapter: string | null;
+    stage: string;
+  };
+  const stageColor = STAGE_COLORS[stage] ?? "#666";
   return (
-    <div className="rounded border border-gray-300 bg-white p-2 text-xs shadow-sm">
-      <Handle type="target" position={Position.Left} />
-      <div className="font-semibold leading-tight">{name}</div>
-      <div className="text-gray-500">
-        {chapter ?? "—"} · {stage}
+    <div
+      className="card-cut min-w-[200px] border bg-[#0a0a0a] px-3 py-2.5 shadow-sm"
+      style={{ borderColor: stageColor }}
+    >
+      <Handle type="target" position={Position.Left} style={{ background: stageColor }} />
+      <div className="text-[10px] font-bold tracking-widest text-white/40 uppercase">
+        {chapter ?? "—"}
       </div>
-      <Handle type="source" position={Position.Right} />
+      <div className="text-sm leading-tight font-black text-white uppercase">{name}</div>
+      <div
+        className="mt-1 inline-block px-1.5 py-0.5 text-[10px] font-bold tracking-widest uppercase"
+        style={{
+          background: stageColor,
+          color: stage === "validating" ? "#000" : "#fff",
+        }}
+      >
+        {stage}
+      </div>
+      <Handle type="source" position={Position.Right} style={{ background: stageColor }} />
     </div>
   );
 }
@@ -97,17 +148,18 @@ export function RelationshipGraph({
   const { nodes, edges } = useMemo(() => layout(nodeData, edgeData), [nodeData, edgeData]);
 
   return (
-    <div className="h-[calc(100vh-12rem)] w-full overflow-hidden rounded border border-gray-200">
+    <div className="relative h-[calc(100vh-14rem)] w-full overflow-hidden border border-white/10 bg-[#050505]">
       <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         fitView
+        fitViewOptions={{ padding: 0.15 }}
         proOptions={{ hideAttribution: true }}
         onNodeClick={(_, node) => router.push(`/enterprises/${node.id}`)}
       >
-        <Background />
-        <Controls />
+        <Background color="#1a1a1a" gap={24} />
+        <Controls showInteractive={false} />
       </ReactFlow>
     </div>
   );

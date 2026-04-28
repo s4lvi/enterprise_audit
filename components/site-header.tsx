@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { createClient } from "@/lib/supabase/server";
@@ -15,9 +16,6 @@ export async function SiteHeader() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  // Don't render the header for unauthenticated visitors (the only public
-  // routes are /login and /auth/*, which look better without it).
   if (!user) return null;
 
   const { data: profile } = await supabase
@@ -29,35 +27,60 @@ export async function SiteHeader() {
   const isAdmin = profile?.role === "admin";
 
   return (
-    <header className="border-b border-gray-200 bg-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-3">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="text-sm font-semibold tracking-tight">
-            Enterprise Audit
+    <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md">
+      {/* three thin red accent bars */}
+      <div className="top-bars">
+        <span />
+        <span />
+        <span />
+      </div>
+
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-8">
+          <Link href="/" className="flex items-center gap-3">
+            <Image
+              src="/logo.svg"
+              alt="ACP"
+              width={36}
+              height={30}
+              className="h-7 w-auto"
+              priority
+            />
+            <span className="hidden text-sm font-black tracking-[0.2em] uppercase sm:inline">
+              Enterprise <span className="text-brand-primary">Audit</span>
+            </span>
           </Link>
-          <nav className="flex items-center gap-4 text-sm">
+          <nav className="hidden items-center gap-6 md:flex">
             {NAV.map((n) => (
-              <Link key={n.href} href={n.href} className="text-gray-600 hover:text-gray-900">
+              <Link
+                key={n.href}
+                href={n.href}
+                className="text-xs font-bold uppercase tracking-[0.2em] text-white/60 transition-colors hover:text-white"
+              >
                 {n.label}
               </Link>
             ))}
             {isAdmin ? (
-              <Link href="/admin/audit-log" className="text-gray-600 hover:text-gray-900">
+              <Link
+                href="/admin/audit-log"
+                className="text-xs font-bold uppercase tracking-[0.2em] text-white/60 transition-colors hover:text-white"
+              >
                 Audit log
               </Link>
             ) : null}
           </nav>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-500">
+
+        <div className="flex items-center gap-4">
+          <span className="hidden text-xs uppercase tracking-widest text-white/40 sm:inline">
             {profile?.display_name ?? user.email}
-            <span className="mx-1.5 text-gray-300">·</span>
-            <span className="font-medium text-gray-600">{profile?.role ?? "—"}</span>
+            <span className="mx-2 text-white/20">·</span>
+            <span className="text-white/60">{profile?.role ?? "—"}</span>
           </span>
           <form action="/logout" method="post">
             <button
               type="submit"
-              className="rounded border border-gray-300 px-2.5 py-1 text-xs hover:bg-gray-50"
+              className="btn-cut bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-widest transition-colors hover:bg-white/20"
               aria-label="Sign out"
             >
               Sign out

@@ -33,18 +33,18 @@ export const auditColumns: ColumnDef<AuditRow>[] = [
       row.original.enterprise_id ? (
         <Link
           href={`/enterprises/${row.original.enterprise_id}`}
-          className="text-gray-600 hover:underline"
+          className="text-white/60 hover:underline"
         >
           {row.original.enterprise_name ?? "—"}
         </Link>
       ) : (
-        <span className="text-gray-600">—</span>
+        <span className="text-white/60">—</span>
       ),
   },
   {
     accessorKey: "auditor_name",
     header: ({ column }) => <SortableHeader column={column}>Auditor</SortableHeader>,
-    cell: ({ row }) => <span className="text-gray-600">{row.original.auditor_name ?? "—"}</span>,
+    cell: ({ row }) => <span className="text-white/60">{row.original.auditor_name ?? "—"}</span>,
   },
   {
     accessorKey: "feasibility_score",
