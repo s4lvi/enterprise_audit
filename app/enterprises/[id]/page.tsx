@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 
 import { updateEnterprise } from "../actions";
@@ -14,17 +16,25 @@ export default async function EnterpriseDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: enterprise, error }, { data: chapters }, { data: profiles }] = await Promise.all([
-    supabase
-      .from("enterprises")
-      .select(
-        "id, chapter_id, name, outline, category, stage, location_name, lat, lng, contact_member_id, contact_external, business_plan_url, business_plan_notes, resources_needed, founded_on",
-      )
-      .eq("id", id)
-      .maybeSingle(),
-    supabase.from("chapters").select("id, name").order("name"),
-    supabase.from("profiles").select("id, display_name, chapter_id").order("display_name"),
-  ]);
+  const [{ data: enterprise, error }, { data: chapters }, { data: profiles }, { data: audits }] =
+    await Promise.all([
+      supabase
+        .from("enterprises")
+        .select(
+          "id, chapter_id, name, outline, category, stage, location_name, lat, lng, contact_member_id, contact_external, business_plan_url, business_plan_notes, resources_needed, founded_on",
+        )
+        .eq("id", id)
+        .maybeSingle(),
+      supabase.from("chapters").select("id, name").order("name"),
+      supabase.from("profiles").select("id, display_name, chapter_id").order("display_name"),
+      supabase
+        .from("audits")
+        .select(
+          "id, audited_on, feasibility_score, progress_score, capability_score, auditor:profiles!auditor_id(display_name)",
+        )
+        .eq("enterprise_id", id)
+        .order("audited_on", { ascending: false }),
+    ]);
 
   if (error) {
     return (
@@ -61,6 +71,49 @@ export default async function EnterpriseDetailPage({
         action={updateEnterprise.bind(null, id)}
         submitLabel="Save changes"
       />
+
+      <hr className="my-8" />
+
+      <section className="mb-8">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Audits</h2>
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/audits/new?enterprise_id=${id}`}>Add audit</Link>
+          </Button>
+        </div>
+        {audits && audits.length > 0 ? (
+          <div className="overflow-hidden rounded border border-gray-200">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+                <tr>
+                  <th className="p-2">Date</th>
+                  <th className="p-2">Auditor</th>
+                  <th className="p-2 text-center">Feas</th>
+                  <th className="p-2 text-center">Prog</th>
+                  <th className="p-2 text-center">Cap</th>
+                </tr>
+              </thead>
+              <tbody>
+                {audits.map((a) => (
+                  <tr key={a.id} className="border-t hover:bg-gray-50">
+                    <td className="p-2">
+                      <Link href={`/audits/${a.id}`} className="hover:underline">
+                        {a.audited_on}
+                      </Link>
+                    </td>
+                    <td className="p-2 text-gray-600">{a.auditor?.display_name ?? "—"}</td>
+                    <td className="p-2 text-center">{a.feasibility_score}</td>
+                    <td className="p-2 text-center">{a.progress_score}</td>
+                    <td className="p-2 text-center">{a.capability_score}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-600">No audits yet for this enterprise.</p>
+        )}
+      </section>
 
       <hr className="my-8" />
       <DeleteEnterpriseButton id={id} name={enterprise.name} />
