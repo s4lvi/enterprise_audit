@@ -16,11 +16,22 @@ export type EnterprisePoint = {
   chapter_name: string | null;
 };
 
-type Props = { points: EnterprisePoint[] };
+type Props = {
+  points: EnterprisePoint[];
+  /** Tailwind class for the wrapper div. Default fills the page; pass a
+   * fixed height for embedded use (dashboard, sidebars). */
+  className?: string;
+  /** Hide marker popups (useful for non-interactive embeds). */
+  interactive?: boolean;
+};
 
 const EMPTY_VIEW = { longitude: -98.5, latitude: 39.5, zoom: 3.5 }; // continental US
 
-export function EnterpriseMap({ points }: Props) {
+export function EnterpriseMap({
+  points,
+  className = "h-[calc(100vh-10rem)]",
+  interactive = true,
+}: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const initialView = useMemo(() => {
@@ -38,13 +49,15 @@ export function EnterpriseMap({ points }: Props) {
   );
 
   return (
-    <div className="relative h-[calc(100vh-10rem)] w-full overflow-hidden border border-white/10">
+    <div className={`relative w-full overflow-hidden border border-white/10 ${className}`}>
       <Map
         initialViewState={initialView}
         style={{ position: "absolute", inset: 0 }}
         mapStyle="https://tiles.openfreemap.org/styles/liberty"
+        attributionControl={interactive ? undefined : false}
+        dragRotate={interactive}
       >
-        <NavigationControl position="top-right" />
+        {interactive ? <NavigationControl position="top-right" /> : null}
 
         {points.map((p) => (
           <Marker
@@ -65,7 +78,7 @@ export function EnterpriseMap({ points }: Props) {
           </Marker>
         ))}
 
-        {selected ? (
+        {selected && interactive ? (
           <Popup
             longitude={selected.lng}
             latitude={selected.lat}
