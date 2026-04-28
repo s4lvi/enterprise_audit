@@ -28,6 +28,39 @@ export type Database = {
   };
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          actor_id: string | null;
+          id: number;
+          new_data: Json | null;
+          occurred_at: string;
+          old_data: Json | null;
+          operation: string;
+          row_id: string | null;
+          table_name: string;
+        };
+        Insert: {
+          actor_id?: string | null;
+          id?: number;
+          new_data?: Json | null;
+          occurred_at?: string;
+          old_data?: Json | null;
+          operation: string;
+          row_id?: string | null;
+          table_name: string;
+        };
+        Update: {
+          actor_id?: string | null;
+          id?: number;
+          new_data?: Json | null;
+          occurred_at?: string;
+          old_data?: Json | null;
+          operation?: string;
+          row_id?: string | null;
+          table_name?: string;
+        };
+        Relationships: [];
+      };
       audits: {
         Row: {
           audited_on: string;
