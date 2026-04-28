@@ -17,10 +17,18 @@ const stringToOptionalUuid = z
   });
 
 export const profileAdminFormSchema = z.object({
-  display_name: z.string().trim().min(1, "Display name is required").max(120),
+  display_name: z.string().trim().min(1, "Name is required").max(120),
   role: z.enum(USER_ROLES),
   chapter_id: stringToOptionalUuid,
 });
 
 export type ProfileAdminFormInput = z.input<typeof profileAdminFormSchema>;
 export type ProfileAdminFormValues = z.output<typeof profileAdminFormSchema>;
+
+/** What a user can edit on their own profile (no role/chapter changes — RLS blocks those). */
+export const profileSelfFormSchema = z.object({
+  display_name: z.string().trim().min(1, "Name is required").max(120),
+});
+
+export type ProfileSelfFormInput = z.input<typeof profileSelfFormSchema>;
+export type ProfileSelfFormValues = z.output<typeof profileSelfFormSchema>;

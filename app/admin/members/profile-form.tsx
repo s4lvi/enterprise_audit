@@ -50,7 +50,7 @@ export function ProfileAdminForm({ chapters, defaultValues, action }: Props) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-1.5">
-        <Label>Display name</Label>
+        <Label>Name</Label>
         <Input {...form.register("display_name")} />
         {errors.display_name?.message ? (
           <p className="text-sm text-brand-danger">{errors.display_name.message}</p>
