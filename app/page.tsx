@@ -50,6 +50,9 @@ export default async function HomePage() {
         <Link href="/audits" className="block text-blue-600 hover:underline">
           → Audits
         </Link>
+        <Link href="/map" className="block text-blue-600 hover:underline">
+          → Map
+        </Link>
       </nav>
     </main>
   );
