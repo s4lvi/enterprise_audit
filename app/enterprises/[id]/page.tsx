@@ -66,7 +66,7 @@ export default async function EnterpriseDetailPage({
   if (error) {
     return (
       <main className="mx-auto mt-8 max-w-2xl p-6">
-        <p className="text-red-600">{error.message}</p>
+        <p className="text-brand-danger">{error.message}</p>
       </main>
     );
   }
@@ -133,9 +133,9 @@ export default async function EnterpriseDetailPage({
           </Button>
         </div>
         {audits && audits.length > 0 ? (
-          <div className="overflow-hidden rounded border border-gray-200">
+          <div className="overflow-hidden rounded border border-white/10">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+              <thead className="bg-white/5 text-left text-xs uppercase tracking-wide text-white/50">
                 <tr>
                   <th className="p-2">Date</th>
                   <th className="p-2">Auditor</th>
@@ -146,13 +146,13 @@ export default async function EnterpriseDetailPage({
               </thead>
               <tbody>
                 {audits.map((a) => (
-                  <tr key={a.id} className="border-t hover:bg-gray-50">
+                  <tr key={a.id} className="border-t hover:bg-white/5">
                     <td className="p-2">
                       <Link href={`/audits/${a.id}`} className="hover:underline">
                         {a.audited_on}
                       </Link>
                     </td>
-                    <td className="p-2 text-gray-600">{a.auditor?.display_name ?? "—"}</td>
+                    <td className="p-2 text-white/60">{a.auditor?.display_name ?? "—"}</td>
                     <td className="p-2 text-center">{a.feasibility_score}</td>
                     <td className="p-2 text-center">{a.progress_score}</td>
                     <td className="p-2 text-center">{a.capability_score}</td>
@@ -162,7 +162,7 @@ export default async function EnterpriseDetailPage({
             </table>
           </div>
         ) : (
-          <p className="text-sm text-gray-600">No audits yet for this enterprise.</p>
+          <p className="text-sm text-white/60">No audits yet for this enterprise.</p>
         )}
       </section>
 

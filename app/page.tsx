@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function HomePage() {
@@ -25,51 +24,73 @@ export default async function HomePage() {
   ]);
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 p-6">
-      <h1 className="mb-1 text-2xl font-semibold">
-        Welcome, {profile?.display_name ?? user.email}
-      </h1>
-      <p className="mb-8 text-sm text-gray-600">
-        Role: <span className="font-medium">{profile?.role ?? "unknown"}</span>
-        {profile?.chapter_id == null ? " · No chapter assigned yet" : ""}
-      </p>
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        <SummaryCard href="/chapters" title="Chapters" count={chaptersCount ?? 0} />
-        <SummaryCard href="/enterprises" title="Enterprises" count={enterprisesCount ?? 0} />
-        <SummaryCard href="/audits" title="Audits" count={auditsCount ?? 0} />
+    <main className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mb-10">
+        <p className="mb-2 text-xs font-bold tracking-widest text-brand-primary uppercase">
+          Welcome
+        </p>
+        <h1 className="text-4xl leading-tight md:text-5xl">
+          {profile?.display_name ?? user.email}
+        </h1>
+        <p className="mt-2 text-xs tracking-widest text-white/40 uppercase">
+          {profile?.role ?? "unknown"}
+          {profile?.chapter_id == null ? " · No chapter assigned" : ""}
+        </p>
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <SummaryCard href="/map" title="Map" subtitle="Plotted enterprises" />
-        <SummaryCard href="/graph" title="Graph" subtitle="Relationships across enterprises" />
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard href="/chapters" label="Chapters" count={chaptersCount ?? 0} />
+        <StatCard href="/enterprises" label="Enterprises" count={enterprisesCount ?? 0} />
+        <StatCard href="/audits" label="Audits" count={auditsCount ?? 0} />
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <ViewCard
+          href="/map"
+          label="Map"
+          description="Geographic view of all enterprises with coordinates."
+        />
+        <ViewCard
+          href="/graph"
+          label="Graph"
+          description="Relationships across enterprises (partner, supplier, parent, etc)."
+        />
       </div>
     </main>
   );
 }
 
-function SummaryCard({
+function StatCard({ href, label, count }: { href: string; label: string; count: number }) {
+  return (
+    <Link
+      href={href}
+      className="card-cut group block border border-white/10 bg-brand-surface p-5 transition-colors hover:border-brand-primary/50"
+    >
+      <p className="text-[10px] font-bold tracking-widest text-white/40 uppercase">{label}</p>
+      <p className="mt-2 text-4xl text-white">{count}</p>
+      <p className="mt-3 text-[10px] font-bold tracking-widest text-brand-primary uppercase opacity-0 transition-opacity group-hover:opacity-100">
+        View →
+      </p>
+    </Link>
+  );
+}
+
+function ViewCard({
   href,
-  title,
-  count,
-  subtitle,
+  label,
+  description,
 }: {
   href: string;
-  title: string;
-  count?: number;
-  subtitle?: string;
+  label: string;
+  description: string;
 }) {
   return (
-    <Link href={href} className="block focus:outline-none">
-      <Card className="transition hover:border-gray-400">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-gray-700">{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          {typeof count === "number" ? <p className="text-2xl font-semibold">{count}</p> : null}
-          {subtitle ? <p className="text-sm text-gray-600">{subtitle}</p> : null}
-        </CardContent>
-      </Card>
+    <Link
+      href={href}
+      className="card-cut group block border border-white/10 bg-brand-surface p-5 transition-colors hover:border-brand-primary/50"
+    >
+      <p className="text-[10px] font-bold tracking-widest text-white/40 uppercase">{label}</p>
+      <p className="mt-2 text-base font-bold text-white normal-case">{description}</p>
     </Link>
   );
 }

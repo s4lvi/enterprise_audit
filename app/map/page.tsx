@@ -13,7 +13,7 @@ export default async function MapPage() {
   if (error) {
     return (
       <main className="mx-auto mt-8 max-w-6xl p-6">
-        <p className="text-red-600">{error.message}</p>
+        <p className="text-brand-danger">{error.message}</p>
       </main>
     );
   }
@@ -37,7 +37,7 @@ export default async function MapPage() {
     <main className="mx-auto mt-8 max-w-6xl p-6">
       <header className="mb-4 flex items-baseline justify-between">
         <h1 className="text-2xl font-semibold">Map</h1>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-white/50">
           {totalShown} of {totalSelectable} enterprises pinned
         </p>
       </header>
@@ -45,7 +45,7 @@ export default async function MapPage() {
       <EnterpriseMap points={points} />
 
       {totalSelectable > totalShown ? (
-        <p className="mt-3 text-sm text-gray-500">
+        <p className="mt-3 text-sm text-white/50">
           {totalSelectable - totalShown} enterprises don&apos;t have lat/lng set and are hidden. Add
           coordinates on the enterprise edit page to include them here.
         </p>

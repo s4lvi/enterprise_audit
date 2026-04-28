@@ -24,7 +24,7 @@ export const chapterColumns: ColumnDef<ChapterRow>[] = [
   {
     accessorKey: "notes",
     header: "Notes",
-    cell: ({ row }) => <span className="text-gray-600">{row.original.notes ?? "—"}</span>,
+    cell: ({ row }) => <span className="text-white/60">{row.original.notes ?? "—"}</span>,
     enableSorting: false,
   },
 ];

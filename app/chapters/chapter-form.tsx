@@ -57,7 +57,9 @@ export function ChapterForm({ defaultValues, action, submitLabel = "Save" }: Pro
         <Textarea rows={4} {...form.register("notes")} />
       </Field>
 
-      {errors.root?.message ? <p className="text-sm text-red-600">{errors.root.message}</p> : null}
+      {errors.root?.message ? (
+        <p className="text-sm text-brand-danger">{errors.root.message}</p>
+      ) : null}
 
       <Button type="submit" disabled={isPending}>
         {isPending ? "Saving..." : submitLabel}
@@ -81,10 +83,10 @@ function Field({
     <div className="space-y-1.5">
       <Label>
         {label}
-        {required ? <span className="text-red-600"> *</span> : null}
+        {required ? <span className="text-brand-danger"> *</span> : null}
       </Label>
       {children}
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm text-brand-danger">{error}</p> : null}
     </div>
   );
 }

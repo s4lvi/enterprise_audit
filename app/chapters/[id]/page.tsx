@@ -18,7 +18,7 @@ export default async function ChapterDetailPage({ params }: { params: Promise<{ 
   if (error) {
     return (
       <main className="mx-auto mt-8 max-w-2xl p-6">
-        <p className="text-red-600">{error.message}</p>
+        <p className="text-brand-danger">{error.message}</p>
       </main>
     );
   }
