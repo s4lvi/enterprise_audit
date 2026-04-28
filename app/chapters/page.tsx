@@ -1,7 +1,10 @@
 import Link from "next/link";
 
+import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+
+import { chapterColumns, type ChapterRow } from "./columns";
 
 export default async function ChaptersPage() {
   const supabase = await createClient();
@@ -27,32 +30,12 @@ export default async function ChaptersPage() {
         </Button>
       </header>
 
-      {chapters.length === 0 ? (
-        <p className="text-gray-600">No chapters yet. Add one to get started.</p>
-      ) : (
-        <div className="overflow-hidden rounded border border-gray-200">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-              <tr>
-                <th className="p-3">State</th>
-                <th className="p-3">Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {chapters.map((c) => (
-                <tr key={c.id} className="border-t hover:bg-gray-50">
-                  <td className="p-3">
-                    <Link href={`/chapters/${c.id}`} className="font-medium hover:underline">
-                      {c.name}
-                    </Link>
-                  </td>
-                  <td className="p-3 text-gray-600">{c.notes ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable<ChapterRow, unknown>
+        columns={chapterColumns}
+        data={chapters ?? []}
+        searchPlaceholder="Search chapters…"
+        emptyMessage="No chapters yet."
+      />
     </main>
   );
 }
