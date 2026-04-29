@@ -10,27 +10,40 @@ export default async function EnterpriseEditPage({ params }: { params: Promise<{
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: enterprise, error }, { data: chapters }, { data: profiles }, viewer] =
-    await Promise.all([
-      supabase
-        .from("enterprises")
-        .select(
-          "id, chapter_id, name, outline, category, stage, location_name, lat, lng, contact_member_id, contact_external, business_plan_url, business_plan_notes, resources_needed, founded_on",
-        )
-        .eq("id", id)
-        .maybeSingle(),
-      supabase.from("chapters").select("id, name").order("name"),
-      supabase.from("profiles").select("id, display_name, chapter_id").order("display_name"),
-      supabase.auth.getUser().then(async ({ data }) => {
-        if (!data.user) return null;
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", data.user.id)
-          .single();
-        return profile;
-      }),
-    ]);
+  const [
+    { data: enterprise, error },
+    { data: chapters },
+    { data: profiles },
+    { data: checkItems },
+    { data: existingChecks },
+    viewer,
+  ] = await Promise.all([
+    supabase
+      .from("enterprises")
+      .select(
+        "id, chapter_id, name, outline, category, stage, location_name, lat, lng, contact_member_id, contact_external, business_plan_url, business_plan_notes, resources_needed, founded_on",
+      )
+      .eq("id", id)
+      .maybeSingle(),
+    supabase.from("chapters").select("id, name").order("name"),
+    supabase.from("profiles").select("id, display_name, chapter_id").order("display_name"),
+    supabase
+      .from("enterprise_check_items")
+      .select("id, label, description")
+      .eq("archived", false)
+      .order("sort_order")
+      .order("label"),
+    supabase.from("enterprise_checks").select("check_item_id").eq("enterprise_id", id),
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return null;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .single();
+      return profile;
+    }),
+  ]);
 
   if (error) {
     return (
@@ -42,6 +55,7 @@ export default async function EnterpriseEditPage({ params }: { params: Promise<{
   if (!enterprise) notFound();
 
   const isAdmin = viewer?.role === "admin";
+  const defaultCheckedIds = (existingChecks ?? []).map((c) => c.check_item_id);
 
   return (
     <main className="mx-auto mt-8 w-full max-w-2xl px-4 sm:px-6 lg:px-8">
@@ -53,6 +67,8 @@ export default async function EnterpriseEditPage({ params }: { params: Promise<{
       <EnterpriseForm
         chapters={chapters ?? []}
         profiles={profiles ?? []}
+        checkItems={checkItems ?? []}
+        defaultCheckedIds={defaultCheckedIds}
         defaultValues={{
           chapter_id: enterprise.chapter_id,
           name: enterprise.name,

@@ -5,9 +5,15 @@ import { EnterpriseForm } from "../enterprise-form";
 
 export default async function NewEnterprisePage() {
   const supabase = await createClient();
-  const [{ data: chapters }, { data: profiles }] = await Promise.all([
+  const [{ data: chapters }, { data: profiles }, { data: checkItems }] = await Promise.all([
     supabase.from("chapters").select("id, name").order("name"),
     supabase.from("profiles").select("id, display_name, chapter_id").order("display_name"),
+    supabase
+      .from("enterprise_check_items")
+      .select("id, label, description")
+      .eq("archived", false)
+      .order("sort_order")
+      .order("label"),
   ]);
 
   return (
@@ -16,6 +22,7 @@ export default async function NewEnterprisePage() {
       <EnterpriseForm
         chapters={chapters ?? []}
         profiles={profiles ?? []}
+        checkItems={checkItems ?? []}
         action={createEnterprise}
         submitLabel="Create enterprise"
       />

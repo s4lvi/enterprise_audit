@@ -66,7 +66,7 @@ export default async function MapPage() {
               className="size-3 rounded-sm bg-brand-accent"
               style={{ transform: "rotate(45deg)" }}
             />
-            Chapter (state)
+            Chapter (state / province)
           </span>
           <span className="flex items-center gap-1.5 text-white/60">
             <span className="size-2.5 rounded-full border border-white bg-brand-primary" />

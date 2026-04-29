@@ -69,6 +69,12 @@ export async function SiteHeader() {
                   Members
                 </Link>
                 <Link
+                  href="/admin/checklist"
+                  className="text-xs font-bold uppercase tracking-[0.2em] text-white/60 transition-colors hover:text-white"
+                >
+                  Checklist
+                </Link>
+                <Link
                   href="/admin/audit-log"
                   className="text-xs font-bold uppercase tracking-[0.2em] text-white/60 transition-colors hover:text-white"
                 >
