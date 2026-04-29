@@ -11,6 +11,8 @@ import {
 } from "@/lib/schemas/enterprise";
 import { friendlyError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
+import type { Database } from "@/lib/db/database.types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type ActionResult = { error: string | null };
 
@@ -28,12 +30,6 @@ function parse(
   return { ok: true, data: result.data };
 }
 
-/**
- * Best-effort auto-geocode: if the user supplied an address but didn't
- * also fill in lat/lng manually, look up coordinates so the enterprise
- * shows up on the map. If geocoding fails (timeout, no match, etc),
- * leave coords as-is — the save still succeeds.
- */
 async function withGeocoding(data: EnterpriseFormValues): Promise<EnterpriseFormValues> {
   const hasManualCoords = data.lat != null && data.lng != null;
   if (hasManualCoords || !data.location_name) return data;
@@ -44,7 +40,37 @@ async function withGeocoding(data: EnterpriseFormValues): Promise<EnterpriseForm
   return { ...data, lat: coords.lat, lng: coords.lng };
 }
 
-export async function createEnterprise(values: EnterpriseFormInput): Promise<ActionResult> {
+/**
+ * Replace this enterprise's checks with exactly the desired set.
+ * Two queries (delete then insert), idempotent.
+ */
+async function syncChecks(
+  supabase: SupabaseClient<Database>,
+  enterpriseId: string,
+  desiredItemIds: string[],
+): Promise<{ error: string | null }> {
+  const { error: delErr } = await supabase
+    .from("enterprise_checks")
+    .delete()
+    .eq("enterprise_id", enterpriseId);
+  if (delErr) return { error: friendlyError(delErr) };
+
+  if (desiredItemIds.length === 0) return { error: null };
+
+  const { error: insErr } = await supabase.from("enterprise_checks").insert(
+    desiredItemIds.map((check_item_id) => ({
+      enterprise_id: enterpriseId,
+      check_item_id,
+    })),
+  );
+  if (insErr) return { error: friendlyError(insErr) };
+  return { error: null };
+}
+
+export async function createEnterprise(
+  values: EnterpriseFormInput,
+  checkItemIds: string[] = [],
+): Promise<ActionResult> {
   const parsed = parse(values);
   if (!parsed.ok) return { error: parsed.error };
 
@@ -56,9 +82,15 @@ export async function createEnterprise(values: EnterpriseFormInput): Promise<Act
 
   const enriched = await withGeocoding(parsed.data);
 
-  const { error } = await supabase.from("enterprises").insert({ ...enriched, created_by: user.id });
+  const { data: row, error } = await supabase
+    .from("enterprises")
+    .insert({ ...enriched, created_by: user.id })
+    .select("id")
+    .single();
+  if (error || !row) return { error: friendlyError(error!) };
 
-  if (error) return { error: friendlyError(error) };
+  const sync = await syncChecks(supabase, row.id, checkItemIds);
+  if (sync.error) return { error: sync.error };
 
   revalidatePath("/enterprises");
   redirect("/enterprises");
@@ -67,19 +99,19 @@ export async function createEnterprise(values: EnterpriseFormInput): Promise<Act
 export async function updateEnterprise(
   id: string,
   values: EnterpriseFormInput,
+  checkItemIds: string[] = [],
 ): Promise<ActionResult> {
   const parsed = parse(values);
   if (!parsed.ok) return { error: parsed.error };
 
   const supabase = await createClient();
-
-  // For updates, only re-geocode when the form left coords blank but did
-  // supply an address. If the user manually set coords, never overwrite.
   const enriched = await withGeocoding(parsed.data);
 
   const { error } = await supabase.from("enterprises").update(enriched).eq("id", id);
-
   if (error) return { error: friendlyError(error) };
+
+  const sync = await syncChecks(supabase, id, checkItemIds);
+  if (sync.error) return { error: sync.error };
 
   revalidatePath("/enterprises");
   revalidatePath(`/enterprises/${id}`);

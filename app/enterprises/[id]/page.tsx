@@ -29,6 +29,7 @@ export default async function EnterpriseDetailPage({
     { data: enterpriseOptions },
     { data: outgoing },
     { data: incoming },
+    { data: checks },
     viewer,
   ] = await Promise.all([
     supabase
@@ -54,6 +55,10 @@ export default async function EnterpriseDetailPage({
       .from("enterprise_relationships")
       .select("id, type, notes, from:enterprises!from_id(id, name)")
       .eq("to_id", id),
+    supabase
+      .from("enterprise_checks")
+      .select("check_item:enterprise_check_items(id, label, description, sort_order)")
+      .eq("enterprise_id", id),
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return null;
       const { data: profile } = await supabase
@@ -79,6 +84,13 @@ export default async function EnterpriseDetailPage({
   // chapter_exec / member can edit if enterprise is in their chapter
   const canEditEnterprise =
     isStaff || (viewer?.chapter_id && viewer.chapter_id === enterprise.chapter_id);
+
+  const checkedItems = (checks ?? [])
+    .filter(
+      (c): c is typeof c & { check_item: NonNullable<typeof c.check_item> } => c.check_item != null,
+    )
+    .map((c) => c.check_item)
+    .sort((a, b) => a.sort_order - b.sort_order || a.label.localeCompare(b.label));
 
   const stageColor = STAGE_COLORS[enterprise.stage] ?? "#666";
 
@@ -223,6 +235,30 @@ export default async function EnterpriseDetailPage({
           )}
         </section>
       </div>
+
+      {checkedItems.length > 0 ? (
+        <section className="mt-6 card-cut border border-white/10 bg-brand-surface p-5">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="text-base">Checklist</h2>
+            <span className="text-[10px] font-bold tracking-widest text-white/40 uppercase">
+              {checkedItems.length}
+            </span>
+          </div>
+          <ul className="space-y-1.5 text-sm">
+            {checkedItems.map((c) => (
+              <li key={c.id} className="flex items-start gap-2">
+                <span className="mt-1 inline-block size-2 shrink-0 bg-brand-success" />
+                <span>
+                  <span className="text-white/90">{c.label}</span>
+                  {c.description ? (
+                    <span className="block text-xs text-white/50">{c.description}</span>
+                  ) : null}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <hr className="my-8 border-white/10" />
 

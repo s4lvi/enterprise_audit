@@ -139,6 +139,69 @@ export type Database = {
         };
         Relationships: [];
       };
+      enterprise_check_items: {
+        Row: {
+          archived: boolean;
+          created_at: string;
+          description: string | null;
+          id: string;
+          label: string;
+          sort_order: number;
+          updated_at: string;
+        };
+        Insert: {
+          archived?: boolean;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          label: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Update: {
+          archived?: boolean;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          label?: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      enterprise_checks: {
+        Row: {
+          check_item_id: string;
+          created_at: string;
+          enterprise_id: string;
+        };
+        Insert: {
+          check_item_id: string;
+          created_at?: string;
+          enterprise_id: string;
+        };
+        Update: {
+          check_item_id?: string;
+          created_at?: string;
+          enterprise_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "enterprise_checks_check_item_id_fkey";
+            columns: ["check_item_id"];
+            isOneToOne: false;
+            referencedRelation: "enterprise_check_items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "enterprise_checks_enterprise_id_fkey";
+            columns: ["enterprise_id"];
+            isOneToOne: false;
+            referencedRelation: "enterprises";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       enterprise_members: {
         Row: {
           created_at: string;

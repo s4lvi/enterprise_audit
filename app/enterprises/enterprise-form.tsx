@@ -26,12 +26,15 @@ import type { ActionResult } from "./actions";
 
 export type ChapterOption = { id: string; name: string };
 export type ProfileOption = { id: string; display_name: string; chapter_id: string | null };
+export type CheckItemOption = { id: string; label: string; description: string | null };
 
 type Props = {
   chapters: ChapterOption[];
   profiles: ProfileOption[];
+  checkItems?: CheckItemOption[];
+  defaultCheckedIds?: string[];
   defaultValues?: Partial<EnterpriseFormInput>;
-  action: (values: EnterpriseFormInput) => Promise<ActionResult>;
+  action: (values: EnterpriseFormInput, checkItemIds: string[]) => Promise<ActionResult>;
   submitLabel?: string;
 };
 
@@ -57,11 +60,24 @@ const empty: EnterpriseFormInput = {
 export function EnterpriseForm({
   chapters,
   profiles,
+  checkItems = [],
+  defaultCheckedIds = [],
   defaultValues,
   action,
   submitLabel = "Save",
 }: Props) {
   const [isPending, startTransition] = useTransition();
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(() => new Set(defaultCheckedIds));
+  const toggleCheck = (id: string) =>
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
   const form = useForm<EnterpriseFormInput>({
     resolver: standardSchemaResolver(enterpriseFormSchema),
     defaultValues: { ...empty, ...defaultValues },
@@ -120,8 +136,9 @@ export function EnterpriseForm({
 
   const handleSubmit = form.handleSubmit(() => {
     const values = form.getValues();
+    const ids = Array.from(checkedIds);
     startTransition(async () => {
-      const result = await action(values);
+      const result = await action(values, ids);
       if (result?.error) {
         form.setError("root", { message: result.error });
       }
@@ -253,6 +270,34 @@ export function EnterpriseForm({
           <Input type="date" {...form.register("founded_on")} />
         </Field>
       </Section>
+
+      {checkItems.length > 0 ? (
+        <Section title="Checklist">
+          <p className="text-xs text-white/40">
+            Tick what applies. Manage the list at /admin/checklist.
+          </p>
+          <ul className="space-y-2">
+            {checkItems.map((it) => (
+              <li key={it.id}>
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={checkedIds.has(it.id)}
+                    onChange={() => toggleCheck(it.id)}
+                    className="mt-0.5 size-4 accent-brand-primary"
+                  />
+                  <span>
+                    <span className="text-sm">{it.label}</span>
+                    {it.description ? (
+                      <span className="block text-xs text-white/50">{it.description}</span>
+                    ) : null}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
 
       {errors.root?.message ? (
         <p className="text-sm text-brand-danger">{errors.root.message}</p>

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Map, Marker, NavigationControl, Popup, type MapRef } from "react-map-gl/maplibre";
 
-import { stateCentroid } from "@/lib/us-state-centroids";
+import { regionCentroid } from "@/lib/region-centroids";
 
 export type EnterprisePoint = {
   id: string;
@@ -78,7 +78,7 @@ export function EnterpriseMap({
     () =>
       chapters
         .map((c) => {
-          const center = stateCentroid(c.name);
+          const center = regionCentroid(c.name);
           if (!center) return null;
           return { ...c, lng: center.lng, lat: center.lat };
         })

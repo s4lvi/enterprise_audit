@@ -1,11 +1,13 @@
 /**
- * Approximate geographic centroids for the 50 US states + DC.
- * Used to plot chapter markers on the map (chapters represent states).
+ * Approximate geographic centroids for the 50 US states + DC and the
+ * 13 Canadian provinces and territories. Used to plot chapter markers
+ * on the map (chapters represent states or provinces).
  *
- * Keys are case-insensitive: lookup normalizes to title case.
+ * Lookup is case-insensitive on the chapter name field.
  */
 
 const CENTROIDS: Record<string, { lng: number; lat: number }> = {
+  // United States
   alabama: { lng: -86.79, lat: 32.81 },
   alaska: { lng: -152.4, lat: 61.39 },
   arizona: { lng: -111.43, lat: 34.46 },
@@ -57,8 +59,23 @@ const CENTROIDS: Record<string, { lng: number; lat: number }> = {
   "west virginia": { lng: -80.95, lat: 38.49 },
   wisconsin: { lng: -89.62, lat: 44.27 },
   wyoming: { lng: -107.3, lat: 42.99 },
+
+  // Canada (provinces + territories)
+  alberta: { lng: -114.27, lat: 53.93 },
+  "british columbia": { lng: -123.4, lat: 53.73 },
+  manitoba: { lng: -98.81, lat: 53.76 },
+  "new brunswick": { lng: -66.46, lat: 46.5 },
+  "newfoundland and labrador": { lng: -57.66, lat: 53.13 },
+  "nova scotia": { lng: -63.74, lat: 44.68 },
+  "northwest territories": { lng: -119.78, lat: 64.27 },
+  nunavut: { lng: -90.73, lat: 70.3 },
+  ontario: { lng: -85.32, lat: 51.25 },
+  "prince edward island": { lng: -63.16, lat: 46.51 },
+  quebec: { lng: -71.51, lat: 53.94 },
+  saskatchewan: { lng: -106.45, lat: 54.0 },
+  yukon: { lng: -135.0, lat: 64.28 },
 };
 
-export function stateCentroid(name: string): { lng: number; lat: number } | null {
+export function regionCentroid(name: string): { lng: number; lat: number } | null {
   return CENTROIDS[name.trim().toLowerCase()] ?? null;
 }
