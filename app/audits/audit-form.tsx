@@ -10,7 +10,9 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -19,7 +21,7 @@ import { auditFormSchema, type AuditFormInput } from "@/lib/schemas/audit";
 
 import type { ActionResult } from "./actions";
 
-export type EnterpriseOption = { id: string; name: string };
+export type EnterpriseOption = { id: string; name: string; chapter_name: string | null };
 
 type Props = {
   enterprises: EnterpriseOption[];
@@ -72,10 +74,15 @@ export function AuditForm({ enterprises, defaultValues, action, submitLabel = "S
                 <SelectValue placeholder="Select an enterprise…" />
               </SelectTrigger>
               <SelectContent>
-                {enterprises.map((e) => (
-                  <SelectItem key={e.id} value={e.id}>
-                    {e.name}
-                  </SelectItem>
+                {groupByChapter(enterprises).map(([chapter, list]) => (
+                  <SelectGroup key={chapter}>
+                    <SelectLabel>{chapter}</SelectLabel>
+                    {list.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 ))}
               </SelectContent>
             </Select>
@@ -183,4 +190,19 @@ function Field({
       {error ? <p className="text-sm text-brand-danger">{error}</p> : null}
     </div>
   );
+}
+
+/** Group enterprises by chapter, then sort chapters and items alphabetically. */
+function groupByChapter(enterprises: EnterpriseOption[]): Array<[string, EnterpriseOption[]]> {
+  const groups = new Map<string, EnterpriseOption[]>();
+  for (const e of enterprises) {
+    const key = e.chapter_name ?? "(No chapter)";
+    const list = groups.get(key) ?? [];
+    list.push(e);
+    groups.set(key, list);
+  }
+  for (const list of groups.values()) {
+    list.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 }

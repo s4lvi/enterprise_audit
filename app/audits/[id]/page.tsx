@@ -18,7 +18,7 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
       )
       .eq("id", id)
       .maybeSingle(),
-    supabase.from("enterprises").select("id, name").order("name"),
+    supabase.from("enterprises").select("id, name, chapter:chapters(name)").order("name"),
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return null;
       const { data: profile } = await supabase
@@ -49,7 +49,11 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
       <p className="mb-6 text-sm text-white/60">{audit.audited_on}</p>
 
       <AuditForm
-        enterprises={enterprises ?? []}
+        enterprises={(enterprises ?? []).map((e) => ({
+          id: e.id,
+          name: e.name,
+          chapter_name: e.chapter?.name ?? null,
+        }))}
         defaultValues={{
           enterprise_id: audit.enterprise_id,
           audited_on: audit.audited_on,
