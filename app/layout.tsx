@@ -5,8 +5,8 @@ import { BackgroundSash } from "@/components/background-sash";
 import { SiteHeader } from "@/components/site-header";
 
 export const metadata: Metadata = {
-  title: "Enterprise Audit",
-  description: "Audit business-development chapters' enterprises and ventures.",
+  title: "Enterprise DB",
+  description: "Track and audit business-development chapters' enterprises and ventures.",
 };
 
 export default function RootLayout({

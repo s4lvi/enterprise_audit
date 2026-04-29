@@ -410,6 +410,71 @@ export type Database = {
           },
         ];
       };
+      scheduled_audits: {
+        Row: {
+          assigned_to: string;
+          chapter_id: string;
+          completed_audit_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          notes: string | null;
+          scheduled_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          assigned_to: string;
+          chapter_id: string;
+          completed_audit_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          notes?: string | null;
+          scheduled_at: string;
+          updated_at?: string;
+        };
+        Update: {
+          assigned_to?: string;
+          chapter_id?: string;
+          completed_audit_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          notes?: string | null;
+          scheduled_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_audits_assigned_to_fkey";
+            columns: ["assigned_to"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "scheduled_audits_chapter_id_fkey";
+            columns: ["chapter_id"];
+            isOneToOne: false;
+            referencedRelation: "chapters";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "scheduled_audits_completed_audit_id_fkey";
+            columns: ["completed_audit_id"];
+            isOneToOne: false;
+            referencedRelation: "audits";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "scheduled_audits_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
