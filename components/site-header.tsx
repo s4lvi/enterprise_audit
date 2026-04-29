@@ -7,6 +7,7 @@ const NAV = [
   { href: "/chapters", label: "Chapters" },
   { href: "/enterprises", label: "Enterprises" },
   { href: "/audits", label: "Audits" },
+  { href: "/schedule", label: "Schedule" },
   { href: "/map", label: "Map" },
   { href: "/graph", label: "Graph" },
 ];
@@ -47,7 +48,7 @@ export async function SiteHeader() {
               priority
             />
             <span className="hidden text-sm font-black tracking-[0.2em] uppercase sm:inline">
-              Enterprise <span className="text-brand-primary">Audit</span>
+              Enterprise <span className="text-brand-primary">DB</span>
             </span>
           </Link>
           <nav className="hidden items-center gap-6 md:flex">
@@ -61,26 +62,12 @@ export async function SiteHeader() {
               </Link>
             ))}
             {isAdmin ? (
-              <>
-                <Link
-                  href="/admin/members"
-                  className="text-xs font-bold uppercase tracking-[0.2em] text-white/60 transition-colors hover:text-white"
-                >
-                  Members
-                </Link>
-                <Link
-                  href="/admin/checklist"
-                  className="text-xs font-bold uppercase tracking-[0.2em] text-white/60 transition-colors hover:text-white"
-                >
-                  Checklist
-                </Link>
-                <Link
-                  href="/admin/audit-log"
-                  className="text-xs font-bold uppercase tracking-[0.2em] text-white/60 transition-colors hover:text-white"
-                >
-                  Audit log
-                </Link>
-              </>
+              <Link
+                href="/admin"
+                className="text-xs font-bold uppercase tracking-[0.2em] text-white/60 transition-colors hover:text-white"
+              >
+                Admin
+              </Link>
             ) : null}
           </nav>
         </div>
