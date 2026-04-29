@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 
+import { ScheduleCalendar, type CalendarEvent } from "./calendar";
+
 function formatWhen(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
     weekday: "short",
@@ -14,7 +16,18 @@ function formatWhen(iso: string): string {
   });
 }
 
-export default async function SchedulePage() {
+function pad(n: number) {
+  return n.toString().padStart(2, "0");
+}
+
+export default async function SchedulePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string; month?: string }>;
+}) {
+  const params = await searchParams;
+  const view = params.view === "calendar" ? "calendar" : "list";
+
   const supabase = await createClient();
   const { data: scheduled, error } = await supabase
     .from("scheduled_audits")
@@ -31,12 +44,25 @@ export default async function SchedulePage() {
     );
   }
 
+  const rows = scheduled ?? [];
   const now = new Date();
-  const upcoming = (scheduled ?? []).filter((s) => new Date(s.scheduled_at) >= now).reverse();
-  const past = (scheduled ?? []).filter((s) => new Date(s.scheduled_at) < now);
+  const upcoming = rows.filter((s) => new Date(s.scheduled_at) >= now).reverse();
+  const past = rows.filter((s) => new Date(s.scheduled_at) < now);
+
+  // Calendar month — default to current month if not specified.
+  const today = new Date();
+  const defaultMonth = `${today.getFullYear()}-${pad(today.getMonth() + 1)}`;
+  const yearMonth = /^\d{4}-\d{2}$/.test(params.month ?? "") ? params.month! : defaultMonth;
+
+  const events: CalendarEvent[] = rows.map((s) => ({
+    id: s.id,
+    scheduled_at: s.scheduled_at,
+    chapter_name: s.chapter?.name ?? null,
+    assignee_name: s.assignee?.display_name ?? null,
+  }));
 
   return (
-    <main className="mx-auto mt-8 w-full max-w-5xl px-4 sm:px-6 lg:px-8">
+    <main className="mx-auto mt-8 w-full max-w-6xl px-4 sm:px-6 lg:px-8">
       <header className="mb-6 flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <h1 className="text-3xl">Schedule</h1>
@@ -44,15 +70,48 @@ export default async function SchedulePage() {
             {upcoming.length} upcoming · {past.length} past
           </p>
         </div>
-        <Button asChild size="sm">
-          <Link href="/schedule/new">Schedule audit</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <ViewToggle current={view} />
+          <Button asChild size="sm">
+            <Link href="/schedule/new">Schedule audit</Link>
+          </Button>
+        </div>
       </header>
 
-      <Section title="Upcoming" rows={upcoming} emptyText="Nothing scheduled yet." />
-      <hr className="my-8 border-white/10" />
-      <Section title="Past" rows={past} emptyText="No past audits." dim />
+      {view === "calendar" ? (
+        <ScheduleCalendar yearMonth={yearMonth} events={events} />
+      ) : (
+        <>
+          <Section title="Upcoming" rows={upcoming} emptyText="Nothing scheduled yet." />
+          <hr className="my-8 border-white/10" />
+          <Section title="Past" rows={past} emptyText="No past audits." dim />
+        </>
+      )}
     </main>
+  );
+}
+
+function ViewToggle({ current }: { current: "list" | "calendar" }) {
+  const base = "btn-cut px-3 py-1.5 text-xs font-black uppercase tracking-widest transition-colors";
+  return (
+    <div className="flex">
+      <Link
+        href="/schedule?view=list"
+        className={`${base} ${
+          current === "list" ? "bg-brand-primary text-white" : "bg-white/10 hover:bg-white/20"
+        }`}
+      >
+        List
+      </Link>
+      <Link
+        href="/schedule?view=calendar"
+        className={`${base} ${
+          current === "calendar" ? "bg-brand-primary text-white" : "bg-white/10 hover:bg-white/20"
+        }`}
+      >
+        Calendar
+      </Link>
+    </div>
   );
 }
 
