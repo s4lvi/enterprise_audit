@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { MobileNav } from "@/components/mobile-nav";
 import { createClient } from "@/lib/supabase/server";
 
 const NAV = [
@@ -26,17 +27,18 @@ export async function SiteHeader() {
     .single();
 
   const isAdmin = profile?.role === "admin";
+  const displayName = profile?.display_name ?? user.email ?? "—";
+  const role = profile?.role ?? "—";
 
   return (
     <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md">
-      {/* three thin red accent bars */}
       <div className="top-bars">
         <span />
         <span />
         <span />
       </div>
 
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-3 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6 lg:px-8">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-3">
             <Image
@@ -47,7 +49,7 @@ export async function SiteHeader() {
               className="h-7 w-auto"
               priority
             />
-            <span className="hidden text-sm font-black tracking-[0.2em] uppercase sm:inline">
+            <span className="text-sm font-black tracking-[0.2em] uppercase">
               Enterprise <span className="text-brand-primary">DB</span>
             </span>
           </Link>
@@ -72,16 +74,16 @@ export async function SiteHeader() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <Link
             href="/profile"
-            className="hidden text-xs uppercase tracking-widest text-white/40 transition-colors hover:text-white sm:inline"
+            className="hidden text-xs uppercase tracking-widest text-white/40 transition-colors hover:text-white md:inline"
           >
-            {profile?.display_name ?? user.email}
+            {displayName}
             <span className="mx-2 text-white/20">·</span>
-            <span className="text-white/60">{profile?.role ?? "—"}</span>
+            <span className="text-white/60">{role}</span>
           </Link>
-          <form action="/logout" method="post">
+          <form action="/logout" method="post" className="hidden md:block">
             <button
               type="submit"
               className="btn-cut bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-widest transition-colors hover:bg-white/20"
@@ -90,6 +92,7 @@ export async function SiteHeader() {
               Sign out
             </button>
           </form>
+          <MobileNav items={NAV} isAdmin={isAdmin} displayName={displayName} role={role} />
         </div>
       </div>
     </header>
