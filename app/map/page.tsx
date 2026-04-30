@@ -1,20 +1,29 @@
 import { createClient } from "@/lib/supabase/server";
 
-import { EnterpriseMap, type ChapterPin, type EnterprisePoint } from "./enterprise-map";
+import {
+  EnterpriseMap,
+  type ChapterPin,
+  type EnterprisePoint,
+  type RelationshipLink,
+} from "./enterprise-map";
 
 export default async function MapPage() {
   const supabase = await createClient();
-  const [{ data: enterprises, error }, { data: chapters }, { data: enterpriseCounts }] =
-    await Promise.all([
-      supabase
-        .from("enterprises")
-        .select("id, name, stage, lat, lng, location_name, chapter:chapters(name)")
-        .not("lat", "is", null)
-        .not("lng", "is", null),
-      supabase.from("chapters").select("id, name").order("name"),
-      // Group enterprises by chapter to label each chapter pin with a count.
-      supabase.from("enterprises").select("chapter_id"),
-    ]);
+  const [
+    { data: enterprises, error },
+    { data: chapters },
+    { data: enterpriseCounts },
+    { data: relationships },
+  ] = await Promise.all([
+    supabase
+      .from("enterprises")
+      .select("id, name, stage, lat, lng, location_name, chapter:chapters(name)")
+      .not("lat", "is", null)
+      .not("lng", "is", null),
+    supabase.from("chapters").select("id, name").order("name"),
+    supabase.from("enterprises").select("chapter_id"),
+    supabase.from("enterprise_relationships").select("id, from_id, to_id, type"),
+  ]);
 
   if (error) {
     return (
@@ -46,6 +55,18 @@ export default async function MapPage() {
     enterpriseCount: counts.get(c.id) ?? 0,
   }));
 
+  const links: RelationshipLink[] = (relationships ?? []).map((r) => ({
+    id: r.id,
+    from_id: r.from_id,
+    to_id: r.to_id,
+    type: r.type,
+  }));
+
+  const pointIds = new Set(points.map((p) => p.id));
+  const drawableLinks = links.filter(
+    (l) => pointIds.has(l.from_id) && pointIds.has(l.to_id) && l.from_id !== l.to_id,
+  );
+
   const totalSelectable = (enterprises ?? []).length;
   const totalShown = points.length;
 
@@ -57,25 +78,38 @@ export default async function MapPage() {
           <p className="mt-1 text-xs tracking-wider text-white/50 uppercase">
             {chapterPins.length} chapter
             {chapterPins.length === 1 ? "" : "s"} · {totalShown} of {totalSelectable} enterprises
-            pinned
+            pinned · {drawableLinks.length} relationship line
+            {drawableLinks.length === 1 ? "" : "s"}
           </p>
         </div>
-        <div className="flex items-center gap-4 text-[10px] tracking-widest uppercase">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] tracking-widest uppercase">
           <span className="flex items-center gap-1.5 text-white/60">
             <span
               className="size-3 rounded-sm bg-brand-accent"
               style={{ transform: "rotate(45deg)" }}
             />
-            Chapter (state / province)
+            Chapter
           </span>
           <span className="flex items-center gap-1.5 text-white/60">
             <span className="size-2.5 rounded-full border border-white bg-brand-primary" />
             Enterprise
           </span>
+          <span className="flex items-center gap-1.5 text-white/60">
+            <span className="h-0.5 w-5" style={{ background: "#ffd600" }} />
+            Partner
+          </span>
+          <span className="flex items-center gap-1.5 text-white/60">
+            <span className="h-0.5 w-5" style={{ background: "#22c55e" }} />
+            Supplier / customer
+          </span>
+          <span className="flex items-center gap-1.5 text-white/60">
+            <span className="h-0.5 w-5" style={{ background: "#c11616" }} />
+            Competitor
+          </span>
         </div>
       </header>
 
-      <EnterpriseMap points={points} chapters={chapterPins} />
+      <EnterpriseMap points={points} chapters={chapterPins} relationships={drawableLinks} />
 
       {totalSelectable > totalShown ? (
         <p className="mt-3 text-sm text-white/50">

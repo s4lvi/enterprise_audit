@@ -4,7 +4,15 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Map, Marker, NavigationControl, Popup, type MapRef } from "react-map-gl/maplibre";
+import {
+  Layer,
+  Map as MapGL,
+  Marker,
+  NavigationControl,
+  Popup,
+  Source,
+  type MapRef,
+} from "react-map-gl/maplibre";
 
 import { regionCentroid } from "@/lib/region-centroids";
 
@@ -24,17 +32,36 @@ export type ChapterPin = {
   enterpriseCount: number;
 };
 
+export type RelationshipLink = {
+  id: string;
+  from_id: string;
+  to_id: string;
+  type: string;
+};
+
 type Selection = { kind: "enterprise"; id: string } | { kind: "chapter"; id: string };
 
 type Props = {
   points: EnterprisePoint[];
   chapters?: ChapterPin[];
+  relationships?: RelationshipLink[];
   /** Tailwind class for the wrapper div. Default fills the page; pass a
    * fixed height for embedded use (dashboard, sidebars). */
   className?: string;
   /** Hide marker popups + nav controls (useful for non-interactive embeds). */
   interactive?: boolean;
 };
+
+// Match the colors used on the /graph page for visual consistency.
+const RELATIONSHIP_TYPE_COLORS: Record<string, string> = {
+  partner: "#ffd600",
+  supplier: "#22c55e",
+  customer: "#22c55e",
+  competitor: "#c11616",
+  parent: "#ffffff",
+  spinoff: "#888888",
+};
+const RELATIONSHIP_TYPE_FALLBACK = "#888888";
 
 const EMPTY_VIEW = { longitude: -98.5, latitude: 39.5, zoom: 3.5 }; // continental US
 
@@ -68,10 +95,43 @@ const DARK_MAP_STYLE = {
 export function EnterpriseMap({
   points,
   chapters = [],
+  relationships = [],
   className = "h-[calc(100vh-10rem)]",
   interactive = true,
 }: Props) {
   const [selected, setSelected] = useState<Selection | null>(null);
+
+  // Build a GeoJSON FeatureCollection of LineStrings for relationships
+  // whose endpoints both have lat/lng. Skip self-loops just in case.
+  const relationshipsGeojson = useMemo(() => {
+    const byId = new Map(points.map((p) => [p.id, p]));
+    return {
+      type: "FeatureCollection" as const,
+      features: relationships
+        .map((r) => {
+          if (r.from_id === r.to_id) return null;
+          const a = byId.get(r.from_id);
+          const b = byId.get(r.to_id);
+          if (!a || !b) return null;
+          return {
+            type: "Feature" as const,
+            properties: {
+              id: r.id,
+              type: r.type,
+              color: RELATIONSHIP_TYPE_COLORS[r.type] ?? RELATIONSHIP_TYPE_FALLBACK,
+            },
+            geometry: {
+              type: "LineString" as const,
+              coordinates: [
+                [a.lng, a.lat],
+                [b.lng, b.lat],
+              ],
+            },
+          };
+        })
+        .filter((f): f is NonNullable<typeof f> => f !== null),
+    };
+  }, [points, relationships]);
 
   // Resolve chapter state-centroid pins
   const chapterPins = useMemo(
@@ -110,7 +170,7 @@ export function EnterpriseMap({
 
   return (
     <div className={`relative w-full overflow-hidden border border-white/10 ${className}`}>
-      <Map
+      <MapGL
         initialViewState={initialView}
         style={{ position: "absolute", inset: 0 }}
         mapStyle={DARK_MAP_STYLE}
@@ -118,6 +178,21 @@ export function EnterpriseMap({
         dragRotate={interactive}
       >
         {interactive ? <NavigationControl position="top-right" /> : null}
+
+        {/* Relationship lines — drawn beneath markers */}
+        {relationshipsGeojson.features.length > 0 ? (
+          <Source id="enterprise-relationships" type="geojson" data={relationshipsGeojson}>
+            <Layer
+              id="enterprise-relationships-line"
+              type="line"
+              paint={{
+                "line-color": ["get", "color"],
+                "line-width": 2,
+                "line-opacity": 0.8,
+              }}
+            />
+          </Source>
+        ) : null}
 
         {/* Chapter markers — yellow, larger, behind enterprises */}
         {chapterPins.map((c) => (
@@ -219,7 +294,7 @@ export function EnterpriseMap({
             </div>
           </Popup>
         ) : null}
-      </Map>
+      </MapGL>
     </div>
   );
 }
