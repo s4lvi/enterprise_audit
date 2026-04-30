@@ -3,7 +3,12 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 
-import { EnterpriseMap, type ChapterPin, type EnterprisePoint } from "./map/enterprise-map";
+import {
+  EnterpriseMap,
+  type ChapterPin,
+  type EnterprisePoint,
+  type RelationshipLink,
+} from "./map/enterprise-map";
 import { RelationshipGraph, type GraphEdge, type GraphNode } from "./graph/relationship-graph";
 
 export default async function HomePage() {
@@ -62,6 +67,11 @@ export default async function HomePage() {
     enterpriseCount: counts.get(c.id) ?? 0,
   }));
 
+  const pointIds = new Set(points.map((p) => p.id));
+  const mapLinks: RelationshipLink[] = (relationships ?? [])
+    .filter((r) => pointIds.has(r.from_id) && pointIds.has(r.to_id) && r.from_id !== r.to_id)
+    .map((r) => ({ id: r.id, from_id: r.from_id, to_id: r.to_id, type: r.type }));
+
   const graphNodes: GraphNode[] = (graphEnterprises ?? []).map((e) => ({
     id: e.id,
     name: e.name,
@@ -106,6 +116,7 @@ export default async function HomePage() {
             <EnterpriseMap
               points={points}
               chapters={chapterPins}
+              relationships={mapLinks}
               className="h-72"
               interactive={false}
             />

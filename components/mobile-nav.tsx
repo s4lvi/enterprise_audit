@@ -50,7 +50,8 @@ export function MobileNav({ items, isAdmin, displayName, role }: Props) {
 
       {open ? (
         <div
-          className="fixed inset-0 top-[3.25rem] z-40 bg-black/95 backdrop-blur-md md:hidden"
+          className="fixed inset-x-0 bottom-0 top-[3.25rem] z-40 backdrop-blur-md md:hidden"
+          style={{ background: "rgba(10, 10, 10, 0.97)" }}
           onClick={() => setOpen(false)}
         >
           <nav className="flex h-full flex-col px-6 pt-4 pb-8" onClick={(e) => e.stopPropagation()}>
