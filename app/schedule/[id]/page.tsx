@@ -37,27 +37,33 @@ export default async function ScheduledAuditDetailPage({
 
   const supabase = await createClient();
 
-  const [{ data: scheduled, error }, { data: chapters }, { data: profiles }, viewer] =
-    await Promise.all([
-      supabase
-        .from("scheduled_audits")
-        .select(
-          "id, scheduled_at, chapter_id, assigned_to, notes, completed_audit_id, chapter:chapters(id, name), assignee:profiles!assigned_to(id, display_name)",
-        )
-        .eq("id", id)
-        .maybeSingle(),
-      supabase.from("chapters").select("id, name").order("name"),
-      supabase.from("profiles").select("id, display_name, role").order("display_name"),
-      supabase.auth.getUser().then(async ({ data }) => {
-        if (!data.user) return null;
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", data.user.id)
-          .single();
-        return profile ? { id: data.user.id, role: profile.role } : null;
-      }),
-    ]);
+  const [
+    { data: scheduled, error },
+    { data: chapters },
+    { data: profiles },
+    { data: enterprises },
+    viewer,
+  ] = await Promise.all([
+    supabase
+      .from("scheduled_audits")
+      .select(
+        "id, scheduled_at, chapter_id, enterprise_id, assigned_to, notes, completed_audit_id, chapter:chapters(id, name), enterprise:enterprises(id, name), assignee:profiles!assigned_to(id, display_name)",
+      )
+      .eq("id", id)
+      .maybeSingle(),
+    supabase.from("chapters").select("id, name").order("name"),
+    supabase.from("profiles").select("id, display_name, role").order("display_name"),
+    supabase.from("enterprises").select("id, name, chapter_id").order("name"),
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return null;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .single();
+      return profile ? { id: data.user.id, role: profile.role } : null;
+    }),
+  ]);
 
   if (error) {
     return (
@@ -72,6 +78,8 @@ export default async function ScheduledAuditDetailPage({
   const isAssignee = viewer?.id === scheduled.assigned_to;
   const canEdit = isStaff || isAssignee;
   const canDelete = viewer?.role === "admin";
+
+  const isChapterAudit = scheduled.enterprise_id == null;
 
   const remove = async () => {
     "use server";
@@ -88,9 +96,11 @@ export default async function ScheduledAuditDetailPage({
         <ScheduledAuditForm
           chapters={chapters ?? []}
           assignees={profiles ?? []}
+          enterprises={enterprises ?? []}
           defaultValues={{
             scheduled_at: toDateTimeLocalValue(scheduled.scheduled_at),
             chapter_id: scheduled.chapter_id,
+            enterprise_id: scheduled.enterprise_id ?? "",
             assigned_to: scheduled.assigned_to,
             notes: scheduled.notes ?? "",
           }}
@@ -117,7 +127,7 @@ export default async function ScheduledAuditDetailPage({
       <header className="mb-8 flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-bold tracking-widest text-brand-primary uppercase">
-            Scheduled audit
+            {isChapterAudit ? "Scheduled chapter audit" : "Scheduled enterprise audit"}
           </p>
           <h1 className="text-3xl">{formatWhen(scheduled.scheduled_at)}</h1>
         </div>
@@ -127,10 +137,17 @@ export default async function ScheduledAuditDetailPage({
               <Link href={`/schedule/${id}?edit=1`}>Edit</Link>
             </Button>
           ) : null}
-          {scheduled.chapter ? (
+          {isChapterAudit && scheduled.chapter ? (
             <Button asChild size="sm">
               <Link href={`/chapters/${scheduled.chapter.id}`}>
                 Open {scheduled.chapter.name} →
+              </Link>
+            </Button>
+          ) : null}
+          {!isChapterAudit && scheduled.enterprise ? (
+            <Button asChild size="sm">
+              <Link href={`/enterprises/${scheduled.enterprise.id}`}>
+                Open {scheduled.enterprise.name} →
               </Link>
             </Button>
           ) : null}
@@ -139,6 +156,10 @@ export default async function ScheduledAuditDetailPage({
 
       <div className="card-cut border border-white/10 bg-brand-surface p-5">
         <DetailRow label="Chapter" value={scheduled.chapter?.name ?? "—"} />
+        <DetailRow
+          label="Target"
+          value={isChapterAudit ? "Chapter audit" : (scheduled.enterprise?.name ?? "—")}
+        />
         <DetailRow label="Assignee" value={scheduled.assignee?.display_name ?? "—"} />
         <DetailRow label="Notes" value={scheduled.notes ?? "—"} multiline={!!scheduled.notes} />
       </div>

@@ -9,11 +9,17 @@ import { DeleteChapterButton } from "../../delete-chapter-button";
 export default async function ChapterEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: chapter, error } = await supabase
-    .from("chapters")
-    .select("id, name, notes")
-    .eq("id", id)
-    .maybeSingle();
+  const [{ data: chapter, error }, { data: checkItems }, { data: existingChecks }] =
+    await Promise.all([
+      supabase.from("chapters").select("id, name, notes").eq("id", id).maybeSingle(),
+      supabase
+        .from("chapter_check_items")
+        .select("id, label, description")
+        .eq("archived", false)
+        .order("sort_order")
+        .order("label"),
+      supabase.from("chapter_checks").select("check_item_id").eq("chapter_id", id),
+    ]);
 
   if (error) {
     return (
@@ -24,6 +30,8 @@ export default async function ChapterEditPage({ params }: { params: Promise<{ id
   }
   if (!chapter) notFound();
 
+  const defaultCheckedIds = (existingChecks ?? []).map((c) => c.check_item_id);
+
   return (
     <main className="mx-auto mt-8 w-full max-w-2xl px-4 sm:px-6 lg:px-8">
       <p className="text-[10px] font-bold tracking-widest text-brand-primary uppercase">
@@ -33,6 +41,8 @@ export default async function ChapterEditPage({ params }: { params: Promise<{ id
 
       <ChapterForm
         defaultValues={{ name: chapter.name, notes: chapter.notes ?? "" }}
+        checkItems={checkItems ?? []}
+        defaultCheckedIds={defaultCheckedIds}
         action={updateChapter.bind(null, id)}
         submitLabel="Save changes"
       />

@@ -3,7 +3,9 @@ import Link from "next/link";
 export type CalendarEvent = {
   id: string;
   scheduled_at: string;
+  kind: "chapter" | "enterprise";
   chapter_name: string | null;
+  enterprise_name: string | null;
   assignee_name: string | null;
 };
 
@@ -131,14 +133,22 @@ export function ScheduleCalendar({
                       hour: "numeric",
                       minute: "2-digit",
                     });
+                    const targetName =
+                      ev.kind === "enterprise"
+                        ? (ev.enterprise_name ?? "")
+                        : (ev.chapter_name ?? "");
+                    const swatch =
+                      ev.kind === "enterprise"
+                        ? "bg-brand-primary/80 hover:bg-brand-primary"
+                        : "bg-brand-accent/80 hover:bg-brand-accent";
                     return (
                       <li key={ev.id}>
                         <Link
                           href={`/schedule/${ev.id}`}
-                          className="block truncate rounded-sm bg-brand-primary/80 px-1 py-0.5 text-[10px] font-bold tracking-wide text-white hover:bg-brand-primary"
-                          title={`${time} · ${ev.chapter_name ?? "—"} · ${ev.assignee_name ?? "—"}`}
+                          className={`block truncate rounded-sm px-1 py-0.5 text-[10px] font-bold tracking-wide text-white ${swatch}`}
+                          title={`${time} · ${ev.kind === "enterprise" ? `${ev.enterprise_name} (${ev.chapter_name})` : `${ev.chapter_name} (chapter audit)`} · ${ev.assignee_name ?? "—"}`}
                         >
-                          {time} {ev.chapter_name ?? ""}
+                          {time} {targetName}
                         </Link>
                       </li>
                     );

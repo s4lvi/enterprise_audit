@@ -66,8 +66,9 @@ export type Database = {
           audited_on: string;
           auditor_id: string;
           capability_score: number;
+          chapter_id: string | null;
           created_at: string;
-          enterprise_id: string;
+          enterprise_id: string | null;
           feasibility_score: number;
           id: string;
           progress_score: number;
@@ -78,8 +79,9 @@ export type Database = {
           audited_on?: string;
           auditor_id: string;
           capability_score: number;
+          chapter_id?: string | null;
           created_at?: string;
-          enterprise_id: string;
+          enterprise_id?: string | null;
           feasibility_score: number;
           id?: string;
           progress_score: number;
@@ -90,8 +92,9 @@ export type Database = {
           audited_on?: string;
           auditor_id?: string;
           capability_score?: number;
+          chapter_id?: string | null;
           created_at?: string;
-          enterprise_id?: string;
+          enterprise_id?: string | null;
           feasibility_score?: number;
           id?: string;
           progress_score?: number;
@@ -107,10 +110,80 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "audits_chapter_id_fkey";
+            columns: ["chapter_id"];
+            isOneToOne: false;
+            referencedRelation: "chapters";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "audits_enterprise_id_fkey";
             columns: ["enterprise_id"];
             isOneToOne: false;
             referencedRelation: "enterprises";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      chapter_check_items: {
+        Row: {
+          archived: boolean;
+          created_at: string;
+          description: string | null;
+          id: string;
+          label: string;
+          sort_order: number;
+          updated_at: string;
+        };
+        Insert: {
+          archived?: boolean;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          label: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Update: {
+          archived?: boolean;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          label?: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      chapter_checks: {
+        Row: {
+          chapter_id: string;
+          check_item_id: string;
+          created_at: string;
+        };
+        Insert: {
+          chapter_id: string;
+          check_item_id: string;
+          created_at?: string;
+        };
+        Update: {
+          chapter_id?: string;
+          check_item_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "chapter_checks_chapter_id_fkey";
+            columns: ["chapter_id"];
+            isOneToOne: false;
+            referencedRelation: "chapters";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "chapter_checks_check_item_id_fkey";
+            columns: ["check_item_id"];
+            isOneToOne: false;
+            referencedRelation: "chapter_check_items";
             referencedColumns: ["id"];
           },
         ];
@@ -417,6 +490,7 @@ export type Database = {
           completed_audit_id: string | null;
           created_at: string;
           created_by: string | null;
+          enterprise_id: string | null;
           id: string;
           notes: string | null;
           scheduled_at: string;
@@ -428,6 +502,7 @@ export type Database = {
           completed_audit_id?: string | null;
           created_at?: string;
           created_by?: string | null;
+          enterprise_id?: string | null;
           id?: string;
           notes?: string | null;
           scheduled_at: string;
@@ -439,6 +514,7 @@ export type Database = {
           completed_audit_id?: string | null;
           created_at?: string;
           created_by?: string | null;
+          enterprise_id?: string | null;
           id?: string;
           notes?: string | null;
           scheduled_at?: string;
@@ -471,6 +547,13 @@ export type Database = {
             columns: ["created_by"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "scheduled_audits_enterprise_id_fkey";
+            columns: ["enterprise_id"];
+            isOneToOne: false;
+            referencedRelation: "enterprises";
             referencedColumns: ["id"];
           },
         ];

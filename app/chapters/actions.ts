@@ -8,17 +8,13 @@ import {
   type ChapterFormInput,
   type ChapterFormValues,
 } from "@/lib/schemas/chapter";
+import type { Database } from "@/lib/db/database.types";
 import { friendlyError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type ActionResult = { error: string | null };
 
-/**
- * Server-side authoritative validator. Takes the raw form input shape
- * (strings) and parses to the transformed shape (nulls / numbers).
- * The client form runs the same schema; this re-runs it because we
- * never trust the client.
- */
 function parse(
   values: unknown,
 ): { ok: true; data: ChapterFormValues } | { ok: false; error: string } {
@@ -33,20 +29,54 @@ function parse(
   return { ok: true, data: result.data };
 }
 
-export async function createChapter(values: ChapterFormInput): Promise<ActionResult> {
+async function syncChecks(
+  supabase: SupabaseClient<Database>,
+  chapterId: string,
+  desiredItemIds: string[],
+): Promise<{ error: string | null }> {
+  const { error: delErr } = await supabase
+    .from("chapter_checks")
+    .delete()
+    .eq("chapter_id", chapterId);
+  if (delErr) return { error: friendlyError(delErr) };
+
+  if (desiredItemIds.length === 0) return { error: null };
+
+  const { error: insErr } = await supabase
+    .from("chapter_checks")
+    .insert(desiredItemIds.map((check_item_id) => ({ chapter_id: chapterId, check_item_id })));
+  if (insErr) return { error: friendlyError(insErr) };
+  return { error: null };
+}
+
+export async function createChapter(
+  values: ChapterFormInput,
+  checkItemIds: string[] = [],
+): Promise<ActionResult> {
   const parsed = parse(values);
   if (!parsed.ok) return { error: parsed.error };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("chapters").insert(parsed.data);
+  const { data: row, error } = await supabase
+    .from("chapters")
+    .insert(parsed.data)
+    .select("id")
+    .single();
 
-  if (error) return { error: friendlyError(error) };
+  if (error || !row) return { error: friendlyError(error!) };
+
+  const sync = await syncChecks(supabase, row.id, checkItemIds);
+  if (sync.error) return { error: sync.error };
 
   revalidatePath("/chapters");
   redirect("/chapters");
 }
 
-export async function updateChapter(id: string, values: ChapterFormInput): Promise<ActionResult> {
+export async function updateChapter(
+  id: string,
+  values: ChapterFormInput,
+  checkItemIds: string[] = [],
+): Promise<ActionResult> {
   const parsed = parse(values);
   if (!parsed.ok) return { error: parsed.error };
 
@@ -54,6 +84,9 @@ export async function updateChapter(id: string, values: ChapterFormInput): Promi
   const { error } = await supabase.from("chapters").update(parsed.data).eq("id", id);
 
   if (error) return { error: friendlyError(error) };
+
+  const sync = await syncChecks(supabase, id, checkItemIds);
+  if (sync.error) return { error: sync.error };
 
   revalidatePath("/chapters");
   revalidatePath(`/chapters/${id}`);

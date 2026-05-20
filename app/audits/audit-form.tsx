@@ -2,7 +2,7 @@
 
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { useTransition } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,9 +22,11 @@ import { auditFormSchema, type AuditFormInput } from "@/lib/schemas/audit";
 import type { ActionResult } from "./actions";
 
 export type EnterpriseOption = { id: string; name: string; chapter_name: string | null };
+export type ChapterOption = { id: string; name: string };
 
 type Props = {
   enterprises: EnterpriseOption[];
+  chapters: ChapterOption[];
   defaultValues?: Partial<AuditFormInput>;
   action: (values: AuditFormInput) => Promise<ActionResult>;
   submitLabel?: string;
@@ -35,7 +37,8 @@ const SCORES = ["1", "2", "3", "4", "5"] as const;
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
 const empty: AuditFormInput = {
-  enterprise_id: "",
+  target_kind: "enterprise",
+  target_id: "",
   audited_on: todayIso(),
   feasibility_score: "3",
   progress_score: "3",
@@ -43,12 +46,20 @@ const empty: AuditFormInput = {
   summary: "",
 };
 
-export function AuditForm({ enterprises, defaultValues, action, submitLabel = "Save" }: Props) {
+export function AuditForm({
+  enterprises,
+  chapters,
+  defaultValues,
+  action,
+  submitLabel = "Save",
+}: Props) {
   const [isPending, startTransition] = useTransition();
   const form = useForm<AuditFormInput>({
     resolver: standardSchemaResolver(auditFormSchema),
     defaultValues: { ...empty, ...defaultValues },
   });
+
+  const targetKind = useWatch({ control: form.control, name: "target_kind" });
 
   const handleSubmit = form.handleSubmit(() => {
     const values = form.getValues();
@@ -64,26 +75,66 @@ export function AuditForm({ enterprises, defaultValues, action, submitLabel = "S
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Field label="Enterprise" required error={errors.enterprise_id?.message}>
+      <Field label="Audit type" required>
         <Controller
           control={form.control}
-          name="enterprise_id"
+          name="target_kind"
+          render={({ field }) => (
+            <Select
+              value={field.value}
+              onValueChange={(v) => {
+                field.onChange(v);
+                // Reset target id when switching kinds — the old uuid
+                // belongs to the other table.
+                form.setValue("target_id", "", { shouldDirty: true });
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="enterprise">Enterprise</SelectItem>
+                <SelectItem value="chapter">Chapter</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        />
+      </Field>
+
+      <Field
+        label={targetKind === "chapter" ? "Chapter" : "Enterprise"}
+        required
+        error={errors.target_id?.message}
+      >
+        <Controller
+          control={form.control}
+          name="target_id"
           render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger>
-                <SelectValue placeholder="Select an enterprise…" />
+                <SelectValue
+                  placeholder={
+                    targetKind === "chapter" ? "Select a chapter…" : "Select an enterprise…"
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
-                {groupByChapter(enterprises).map(([chapter, list]) => (
-                  <SelectGroup key={chapter}>
-                    <SelectLabel>{chapter}</SelectLabel>
-                    {list.map((e) => (
-                      <SelectItem key={e.id} value={e.id}>
-                        {e.name}
+                {targetKind === "chapter"
+                  ? chapters.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
                       </SelectItem>
+                    ))
+                  : groupByChapter(enterprises).map(([chapter, list]) => (
+                      <SelectGroup key={chapter}>
+                        <SelectLabel>{chapter}</SelectLabel>
+                        {list.map((e) => (
+                          <SelectItem key={e.id} value={e.id}>
+                            {e.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     ))}
-                  </SelectGroup>
-                ))}
               </SelectContent>
             </Select>
           )}

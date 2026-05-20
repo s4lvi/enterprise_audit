@@ -21,9 +21,10 @@ export default async function NewScheduledAuditPage() {
     .single();
   if (viewer?.role !== "admin" && viewer?.role !== "auditor") notFound();
 
-  const [{ data: chapters }, { data: profiles }] = await Promise.all([
+  const [{ data: chapters }, { data: profiles }, { data: enterprises }] = await Promise.all([
     supabase.from("chapters").select("id, name").order("name"),
     supabase.from("profiles").select("id, display_name, role").order("display_name"),
+    supabase.from("enterprises").select("id, name, chapter_id").order("name"),
   ]);
 
   return (
@@ -33,6 +34,7 @@ export default async function NewScheduledAuditPage() {
       <ScheduledAuditForm
         chapters={chapters ?? []}
         assignees={profiles ?? []}
+        enterprises={enterprises ?? []}
         defaultValues={{ assigned_to: user.id }}
         action={createScheduledAudit}
         submitLabel="Schedule audit"

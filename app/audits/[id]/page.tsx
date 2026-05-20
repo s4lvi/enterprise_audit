@@ -10,25 +10,27 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: audit, error }, { data: enterprises }, viewer] = await Promise.all([
-    supabase
-      .from("audits")
-      .select(
-        "id, enterprise_id, audited_on, feasibility_score, progress_score, capability_score, summary, auditor_id, enterprise:enterprises(id, name)",
-      )
-      .eq("id", id)
-      .maybeSingle(),
-    supabase.from("enterprises").select("id, name, chapter:chapters(name)").order("name"),
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) return null;
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", data.user.id)
-        .single();
-      return profile;
-    }),
-  ]);
+  const [{ data: audit, error }, { data: enterprises }, { data: chapters }, viewer] =
+    await Promise.all([
+      supabase
+        .from("audits")
+        .select(
+          "id, enterprise_id, chapter_id, audited_on, feasibility_score, progress_score, capability_score, summary, auditor_id, enterprise:enterprises(id, name), chapter:chapters(id, name)",
+        )
+        .eq("id", id)
+        .maybeSingle(),
+      supabase.from("enterprises").select("id, name, chapter:chapters(name)").order("name"),
+      supabase.from("chapters").select("id, name").order("name"),
+      supabase.auth.getUser().then(async ({ data }) => {
+        if (!data.user) return null;
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
+          .single();
+        return profile;
+      }),
+    ]);
 
   if (error) {
     return (
@@ -41,11 +43,16 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
 
   const isAdmin = viewer?.role === "admin";
 
+  const isChapter = audit.chapter_id != null;
+  const target_kind = isChapter ? "chapter" : "enterprise";
+  const target_id = isChapter ? audit.chapter_id! : audit.enterprise_id!;
+  const targetName = isChapter
+    ? (audit.chapter?.name ?? "(unknown)")
+    : (audit.enterprise?.name ?? "(unknown)");
+
   return (
     <main className="mx-auto mt-8 max-w-2xl p-6">
-      <h1 className="mb-1 text-2xl font-semibold">
-        Audit · {audit.enterprise?.name ?? "(unknown)"}
-      </h1>
+      <h1 className="mb-1 text-2xl font-semibold">Audit · {targetName}</h1>
       <p className="mb-6 text-sm text-white/60">{audit.audited_on}</p>
 
       <AuditForm
@@ -54,8 +61,10 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
           name: e.name,
           chapter_name: e.chapter?.name ?? null,
         }))}
+        chapters={chapters ?? []}
         defaultValues={{
-          enterprise_id: audit.enterprise_id,
+          target_kind,
+          target_id,
           audited_on: audit.audited_on,
           feasibility_score: String(audit.feasibility_score),
           progress_score: String(audit.progress_score),

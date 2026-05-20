@@ -11,7 +11,7 @@ export default async function AuditsPage() {
   const { data: audits, error } = await supabase
     .from("audits")
     .select(
-      "id, audited_on, feasibility_score, progress_score, capability_score, enterprise:enterprises(id, name), auditor:profiles!auditor_id(display_name)",
+      "id, audited_on, feasibility_score, progress_score, capability_score, enterprise:enterprises(id, name), chapter:chapters(id, name), auditor:profiles!auditor_id(display_name)",
     )
     .order("audited_on", { ascending: false });
 
@@ -23,16 +23,21 @@ export default async function AuditsPage() {
     );
   }
 
-  const rows: AuditRow[] = (audits ?? []).map((a) => ({
-    id: a.id,
-    audited_on: a.audited_on,
-    feasibility_score: a.feasibility_score,
-    progress_score: a.progress_score,
-    capability_score: a.capability_score,
-    enterprise_id: a.enterprise?.id ?? null,
-    enterprise_name: a.enterprise?.name ?? null,
-    auditor_name: a.auditor?.display_name ?? null,
-  }));
+  const rows: AuditRow[] = (audits ?? []).map((a) => {
+    const kind: "enterprise" | "chapter" = a.chapter ? "chapter" : "enterprise";
+    const target = kind === "chapter" ? a.chapter : a.enterprise;
+    return {
+      id: a.id,
+      audited_on: a.audited_on,
+      feasibility_score: a.feasibility_score,
+      progress_score: a.progress_score,
+      capability_score: a.capability_score,
+      target_kind: kind,
+      target_id: target?.id ?? null,
+      target_name: target?.name ?? null,
+      auditor_name: a.auditor?.display_name ?? null,
+    };
+  });
 
   return (
     <main className="mx-auto mt-8 max-w-5xl p-6">
@@ -46,7 +51,7 @@ export default async function AuditsPage() {
       <DataTable<AuditRow, unknown>
         columns={auditColumns}
         data={rows}
-        searchPlaceholder="Search by enterprise, auditor, date…"
+        searchPlaceholder="Search by target, auditor, date…"
         emptyMessage="No audits yet."
       />
     </main>

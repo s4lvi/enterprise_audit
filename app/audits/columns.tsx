@@ -11,8 +11,9 @@ export type AuditRow = {
   feasibility_score: number;
   progress_score: number;
   capability_score: number;
-  enterprise_id: string | null;
-  enterprise_name: string | null;
+  target_kind: "enterprise" | "chapter";
+  target_id: string | null;
+  target_name: string | null;
   auditor_name: string | null;
 };
 
@@ -27,19 +28,28 @@ export const auditColumns: ColumnDef<AuditRow>[] = [
     ),
   },
   {
-    accessorKey: "enterprise_name",
-    header: ({ column }) => <SortableHeader column={column}>Enterprise</SortableHeader>,
-    cell: ({ row }) =>
-      row.original.enterprise_id ? (
-        <Link
-          href={`/enterprises/${row.original.enterprise_id}`}
-          className="text-white/60 hover:underline"
-        >
-          {row.original.enterprise_name ?? "—"}
+    accessorKey: "target_kind",
+    header: ({ column }) => <SortableHeader column={column}>Type</SortableHeader>,
+    cell: ({ row }) => (
+      <span className="text-[10px] font-bold tracking-widest text-white/50 uppercase">
+        {row.original.target_kind}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "target_name",
+    header: ({ column }) => <SortableHeader column={column}>Target</SortableHeader>,
+    cell: ({ row }) => {
+      const { target_id, target_kind, target_name } = row.original;
+      if (!target_id) return <span className="text-white/60">—</span>;
+      const href =
+        target_kind === "chapter" ? `/chapters/${target_id}` : `/enterprises/${target_id}`;
+      return (
+        <Link href={href} className="text-white/80 hover:underline">
+          {target_name ?? "—"}
         </Link>
-      ) : (
-        <span className="text-white/60">—</span>
-      ),
+      );
+    },
   },
   {
     accessorKey: "auditor_name",

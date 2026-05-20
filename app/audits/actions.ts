@@ -23,6 +23,32 @@ function parse(
   return { ok: true, data: result.data };
 }
 
+/** Map the form's discriminated target onto the two nullable DB columns. */
+function targetColumns(data: AuditFormValues): {
+  enterprise_id: string | null;
+  chapter_id: string | null;
+} {
+  return data.target_kind === "chapter"
+    ? { enterprise_id: null, chapter_id: data.target_id }
+    : { enterprise_id: data.target_id, chapter_id: null };
+}
+
+/** Drop the form-only discriminator fields before passing to the DB. */
+function stripTarget(data: AuditFormValues): Omit<AuditFormValues, "target_kind" | "target_id"> {
+  const { target_kind, target_id, ...rest } = data;
+  void target_kind;
+  void target_id;
+  return rest;
+}
+
+function revalidateTarget(data: AuditFormValues) {
+  if (data.target_kind === "chapter") {
+    revalidatePath(`/chapters/${data.target_id}`);
+  } else {
+    revalidatePath(`/enterprises/${data.target_id}`);
+  }
+}
+
 export async function createAudit(values: AuditFormInput): Promise<ActionResult> {
   const parsed = parse(values);
   if (!parsed.ok) return { error: parsed.error };
@@ -33,17 +59,19 @@ export async function createAudit(values: AuditFormInput): Promise<ActionResult>
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated." };
 
-  const enterpriseId = parsed.data.enterprise_id;
+  const scalar = stripTarget(parsed.data);
+  const cols = targetColumns(parsed.data);
+
   const { error, data } = await supabase
     .from("audits")
-    .insert({ ...parsed.data, auditor_id: user.id })
+    .insert({ ...scalar, ...cols, auditor_id: user.id })
     .select("id")
     .single();
 
   if (error) return { error: friendlyError(error) };
 
   revalidatePath("/audits");
-  revalidatePath(`/enterprises/${enterpriseId}`);
+  revalidateTarget(parsed.data);
   redirect(`/audits/${data.id}`);
 }
 
@@ -52,13 +80,19 @@ export async function updateAudit(id: string, values: AuditFormInput): Promise<A
   if (!parsed.ok) return { error: parsed.error };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("audits").update(parsed.data).eq("id", id);
+  const scalar = stripTarget(parsed.data);
+  const cols = targetColumns(parsed.data);
+
+  const { error } = await supabase
+    .from("audits")
+    .update({ ...scalar, ...cols })
+    .eq("id", id);
 
   if (error) return { error: friendlyError(error) };
 
   revalidatePath("/audits");
   revalidatePath(`/audits/${id}`);
-  revalidatePath(`/enterprises/${parsed.data.enterprise_id}`);
+  revalidateTarget(parsed.data);
   redirect(`/audits/${id}`);
 }
 

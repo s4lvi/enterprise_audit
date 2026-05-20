@@ -32,7 +32,7 @@ export default async function SchedulePage({
   const { data: scheduled, error } = await supabase
     .from("scheduled_audits")
     .select(
-      "id, scheduled_at, notes, chapter:chapters(id, name), assignee:profiles!assigned_to(id, display_name)",
+      "id, scheduled_at, notes, enterprise_id, chapter:chapters(id, name), enterprise:enterprises(id, name), assignee:profiles!assigned_to(id, display_name)",
     )
     .order("scheduled_at", { ascending: false });
 
@@ -57,7 +57,9 @@ export default async function SchedulePage({
   const events: CalendarEvent[] = rows.map((s) => ({
     id: s.id,
     scheduled_at: s.scheduled_at,
+    kind: s.enterprise_id == null ? "chapter" : "enterprise",
     chapter_name: s.chapter?.name ?? null,
+    enterprise_name: s.enterprise?.name ?? null,
     assignee_name: s.assignee?.display_name ?? null,
   }));
 
@@ -119,7 +121,9 @@ type Row = {
   id: string;
   scheduled_at: string;
   notes: string | null;
+  enterprise_id: string | null;
   chapter: { id: string; name: string } | null;
+  enterprise: { id: string; name: string } | null;
   assignee: { id: string; display_name: string } | null;
 };
 
@@ -153,6 +157,17 @@ function Section({
                   <div>
                     <p className="text-[10px] font-bold tracking-widest text-brand-primary uppercase">
                       {r.chapter?.name ?? "—"}
+                      {r.enterprise_id ? (
+                        <>
+                          <span className="mx-1 text-white/30">·</span>
+                          <span className="text-white/70">{r.enterprise?.name ?? "—"}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="mx-1 text-white/30">·</span>
+                          <span className="text-white/50">chapter audit</span>
+                        </>
+                      )}
                     </p>
                     <p className="text-base font-bold text-white">{formatWhen(r.scheduled_at)}</p>
                   </div>

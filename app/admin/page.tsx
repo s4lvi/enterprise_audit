@@ -11,8 +11,13 @@ const TILES: Array<{ href: string; label: string; description: string }> = [
   },
   {
     href: "/admin/checklist",
-    label: "Checklist",
+    label: "Enterprise checklist",
     description: "Configure the per-enterprise checklist (registered, insured, etc).",
+  },
+  {
+    href: "/admin/chapter-checklist",
+    label: "Chapter checklist",
+    description: "Configure the per-chapter checklist for chapter audits.",
   },
   {
     href: "/admin/audit-log",
@@ -34,10 +39,12 @@ export default async function AdminPage() {
     .single();
   if (viewer?.role !== "admin") notFound();
 
-  const [{ count: memberCount }, { count: itemCount }] = await Promise.all([
-    supabase.from("profiles").select("*", { count: "exact", head: true }),
-    supabase.from("enterprise_check_items").select("*", { count: "exact", head: true }),
-  ]);
+  const [{ count: memberCount }, { count: itemCount }, { count: chapterItemCount }] =
+    await Promise.all([
+      supabase.from("profiles").select("*", { count: "exact", head: true }),
+      supabase.from("enterprise_check_items").select("*", { count: "exact", head: true }),
+      supabase.from("chapter_check_items").select("*", { count: "exact", head: true }),
+    ]);
 
   return (
     <main className="mx-auto mt-8 w-full max-w-5xl px-4 sm:px-6 lg:px-8">
@@ -59,6 +66,7 @@ export default async function AdminPage() {
             <p className="mt-1 text-2xl text-white">
               {t.href === "/admin/members" ? (memberCount ?? 0) : null}
               {t.href === "/admin/checklist" ? (itemCount ?? 0) : null}
+              {t.href === "/admin/chapter-checklist" ? (chapterItemCount ?? 0) : null}
               {t.href === "/admin/audit-log" ? "→" : null}
             </p>
             <p className="mt-3 text-xs text-white/60">{t.description}</p>

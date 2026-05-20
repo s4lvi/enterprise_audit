@@ -1,8 +1,8 @@
 "use client";
 
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
-import { useTransition } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useMemo, useTransition } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,17 +22,23 @@ import {
 
 import type { ActionResult } from "./actions";
 
+export type EnterpriseOption = { id: string; name: string; chapter_id: string };
+
 type Props = {
   chapters: Array<{ id: string; name: string }>;
   assignees: Array<{ id: string; display_name: string; role: string }>;
+  enterprises: EnterpriseOption[];
   defaultValues?: Partial<ScheduledAuditFormInput>;
   action: (values: ScheduledAuditFormInput) => Promise<ActionResult>;
   submitLabel?: string;
 };
 
+const NONE = "__none__";
+
 const empty: ScheduledAuditFormInput = {
   scheduled_at: "",
   chapter_id: "",
+  enterprise_id: "",
   assigned_to: "",
   notes: "",
 };
@@ -40,6 +46,7 @@ const empty: ScheduledAuditFormInput = {
 export function ScheduledAuditForm({
   chapters,
   assignees,
+  enterprises,
   defaultValues,
   action,
   submitLabel = "Save",
@@ -49,6 +56,12 @@ export function ScheduledAuditForm({
     resolver: standardSchemaResolver(scheduledAuditFormSchema),
     defaultValues: { ...empty, ...defaultValues },
   });
+
+  const chapterId = useWatch({ control: form.control, name: "chapter_id" });
+  const enterprisesForChapter = useMemo(
+    () => enterprises.filter((e) => e.chapter_id === chapterId),
+    [enterprises, chapterId],
+  );
 
   const onSubmit = form.handleSubmit(() => {
     const values = form.getValues();
@@ -76,7 +89,16 @@ export function ScheduledAuditForm({
           control={form.control}
           name="chapter_id"
           render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select
+              value={field.value}
+              onValueChange={(v) => {
+                field.onChange(v);
+                // Reset enterprise selection when chapter changes — the
+                // previously-picked enterprise probably isn't in the new
+                // chapter.
+                form.setValue("enterprise_id", "", { shouldDirty: true });
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select a chapter…" />
               </SelectTrigger>
@@ -92,6 +114,36 @@ export function ScheduledAuditForm({
         />
         {errors.chapter_id?.message ? (
           <p className="text-sm text-brand-danger">{errors.chapter_id.message}</p>
+        ) : null}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label>Target enterprise (leave blank for chapter audit)</Label>
+        <Controller
+          control={form.control}
+          name="enterprise_id"
+          render={({ field }) => (
+            <Select
+              value={field.value === "" ? NONE : field.value}
+              onValueChange={(v) => field.onChange(v === NONE ? "" : v)}
+              disabled={!chapterId}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="— Chapter audit —" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE}>— Chapter audit —</SelectItem>
+                {enterprisesForChapter.map((e) => (
+                  <SelectItem key={e.id} value={e.id}>
+                    {e.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        {errors.enterprise_id?.message ? (
+          <p className="text-sm text-brand-danger">{errors.enterprise_id.message}</p>
         ) : null}
       </div>
 

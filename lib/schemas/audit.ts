@@ -4,9 +4,12 @@ import { z } from "zod";
  * Audit form schema. Audits are point-in-time records (one row per visit).
  * Scores are 1-5 integers; summary is free text.
  *
+ * An audit targets exactly one of: an enterprise or a chapter. The form
+ * carries a `target_kind` discriminator + the chosen id; the action maps
+ * that to one nullable column in the DB.
+ *
  * `auditor_id` is NOT in the form — the action sets it from auth.uid()
- * because RLS requires it to match the caller and we don't want users
- * choosing.
+ * because RLS requires it to match the caller.
  */
 
 const stringToNullable = z
@@ -36,14 +39,23 @@ const dateString = z
     "Must be a valid date",
   );
 
-export const auditFormSchema = z.object({
-  enterprise_id: z.string().uuid("Enterprise is required"),
-  audited_on: dateString,
-  feasibility_score: scoreFromString,
-  progress_score: scoreFromString,
-  capability_score: scoreFromString,
-  summary: stringToNullable,
-});
+export const auditTargetKinds = ["enterprise", "chapter"] as const;
+export type AuditTargetKind = (typeof auditTargetKinds)[number];
+
+export const auditFormSchema = z
+  .object({
+    target_kind: z.enum(auditTargetKinds),
+    target_id: z.string().min(1, "Target is required"),
+    audited_on: dateString,
+    feasibility_score: scoreFromString,
+    progress_score: scoreFromString,
+    capability_score: scoreFromString,
+    summary: stringToNullable,
+  })
+  .refine(
+    (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.target_id),
+    { message: "Pick a target", path: ["target_id"] },
+  );
 
 export type AuditFormInput = z.input<typeof auditFormSchema>;
 export type AuditFormValues = z.output<typeof auditFormSchema>;

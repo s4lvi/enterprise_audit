@@ -22,9 +22,21 @@ const dateTimeLocalToIso = z
     return d.toISOString();
   });
 
+// Optional enterprise pointer. Null/empty means the schedule is for a
+// chapter-wide audit; a uuid means the schedule is for that enterprise.
+const optionalUuid = z
+  .string()
+  .trim()
+  .transform((v) => (v.length === 0 ? null : v))
+  .refine(
+    (v) => v == null || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v),
+    "Invalid enterprise",
+  );
+
 export const scheduledAuditFormSchema = z.object({
   scheduled_at: dateTimeLocalToIso,
   chapter_id: z.string().uuid("Chapter is required"),
+  enterprise_id: optionalUuid,
   assigned_to: z.string().uuid("Assignee is required"),
   notes: stringToNullable,
 });
